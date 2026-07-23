@@ -1,0 +1,48 @@
+{
+  "extends": "./packaging/electron-builder.base.json",
+  "extraMetadata": {
+    "soapyEdition": "windows-store"
+  },
+  "extraResources": [
+    {
+      "from": "out/store-bridge",
+      "to": "store-bridge",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "out/store-launcher",
+      "to": "store-launcher",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "packaging/OPEN_SOURCE_NOTICES.txt",
+      "to": "legal/OPEN_SOURCE_NOTICES.txt"
+    }
+  ],
+  "appxManifestCreated": "tools/packaging/appx-manifest-created.js",
+  "win": {
+    "executableName": "SoapyPanels",
+    "target": [
+      "nsis",
+      "appx"
+    ],
+    "icon": "packaging/assets/icons/icon.ico"
+  },
+  "appx": {
+    "identityName": "SoapyPanels.SoapyPanels",
+    "applicationId": "SoapyPanels",
+    "publisher": "CN=988215A6-A438-4B2C-BE7F-EE5D7BCFA6C0",
+    "publisherDisplayName": "Soapy Panels",
+    "displayName": "Soapy Panels",
+    "minVersion": "10.0.19041.0",
+    "maxVersionTested": "10.0.19041.0",
+    "capabilities": [
+      "runFullTrust"
+    ],
+    "backgroundColor": "transparent"
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+test/support/app.js
+app/renderer/index.html
+app/renderer/src/boot.js
+Soapy Panels C.html

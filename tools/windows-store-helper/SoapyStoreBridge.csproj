@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWinRT>true</UseWinRT>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SoapyStoreBridge</AssemblyName>
+    <RootNamespace>SoapyStoreBridge</RootNamespace>
+  </PropertyGroup>
+</Project>

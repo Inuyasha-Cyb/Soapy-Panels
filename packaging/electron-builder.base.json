@@ -1,0 +1,13 @@
+{
+  "appId": "com.soapy.panels",
+  "productName": "Soapy Panels",
+  "files": [
+    "app/**/*",
+    "packaging/assets/icons/*",
+    "packaging/THIRD_PARTY_NOTICES.txt"
+  ],
+  "directories": {
+    "output": "dist",
+    "buildResources": "out/packaging"
+  }
+}

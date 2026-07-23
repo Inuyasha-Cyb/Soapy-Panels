@@ -1,0 +1,34 @@
+{
+  "extends": "./packaging/electron-builder.base.json",
+  "extraMetadata": {
+    "soapyEdition": "linux-community"
+  },
+  "files": [
+    "app/**/*",
+    "!app/main/monetization-store.js",
+    "!app/main/windows-store-bridge.js",
+    "!app/shared/monetization-status.js",
+    "!app/renderer/src/ui/ads.js",
+    "!app/renderer/styles/ads.css",
+    "!app/renderer/assets/ads/**/*",
+    "packaging/assets/icons/*",
+    "packaging/THIRD_PARTY_NOTICES.txt"
+  ],
+  "extraResources": [
+    {
+      "from": "packaging/OPEN_SOURCE_NOTICES.txt",
+      "to": "legal/OPEN_SOURCE_NOTICES.txt"
+    }
+  ],
+  "directories": {
+    "output": "dist/linux",
+    "buildResources": "out/packaging"
+  },
+  "linux": {
+    "target": [
+      "AppImage"
+    ],
+    "icon": "packaging/assets/icons/icon.png",
+    "category": "Graphics"
+  }
+}
