@@ -2,6 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const nodeCrypto = require("crypto");
+const { nextAvailableExportPath } = require("./export-save-targets");
 
 const MAX_EXPORT_CHUNK_BYTES = 16 * 1024 * 1024;
 const MAX_EXPORT_STREAM_BYTES = 16 * 1024 * 1024 * 1024;
@@ -171,6 +172,7 @@ function createExportStreamSessionRegistry(options = {}) {
       const session = {
         sessionId,
         filePath: target.filePath,
+        automatic: target.automatic === true,
         tempPath,
         handle,
         webContentsId: Number.isInteger(webContentsId) ? webContentsId : null,
@@ -254,10 +256,25 @@ function createExportStreamSessionRegistry(options = {}) {
             path.dirname(session.filePath),
             session.highestWrittenEnd,
           );
-          await fileSystem.promises.copyFile(session.tempPath, session.filePath);
+          let filePath = session.filePath;
+          while (true) {
+            try {
+              await fileSystem.promises.copyFile(
+                session.tempPath,
+                filePath,
+                session.automatic && fileSystem.constants
+                  ? fileSystem.constants.COPYFILE_EXCL
+                  : 0,
+              );
+              break;
+            } catch (error) {
+              if (!session.automatic || !error || error.code !== "EEXIST") throw error;
+              filePath = nextAvailableExportPath(filePath, fileSystem);
+            }
+          }
           await fileSystem.promises.unlink(session.tempPath);
           session.state = "closed";
-          return { ok: true, fileName: path.basename(session.filePath) };
+          return { ok: true, fileName: path.basename(filePath) };
         } catch (error) {
           await invalidateSession(session);
           throw error;
