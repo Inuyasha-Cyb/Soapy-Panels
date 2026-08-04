@@ -12,6 +12,7 @@ const APPROVED_LICENSE_PATTERNS = [
   /SIL OPEN FONT LICENSE/i,
   /Open Font License/i,
   /Apache License/i,
+  /Distro-Ware/i,
   /public domain/i,
   /CC0/i,
 ];
@@ -29,7 +30,6 @@ const KNOWN_REMOVED_DIRECTORIES = new Set([
   "Bloody",
   "ProFontWindows",
   "Silkscreen",
-  "VTC-Letterer-Pro",
   "Wagnasty",
 ]);
 

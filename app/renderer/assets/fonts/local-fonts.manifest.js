@@ -4659,6 +4659,18 @@ window.localFontManifest = [
     },
   },
   {
+    family: 'VTC Letterer Pro',
+    baseFamily: 'VTC Letterer Pro',
+    label: 'VTC Letterer Pro Regular',
+    weight: '400',
+    style: 'normal',
+    fallback: 'sans-serif',
+    sources: {
+      path: 'assets/fonts/VTC-Letterer-Pro/VTC_letterer_pro.ttf',
+      format: 'truetype',
+    },
+  },
+  {
     family: 'Varela',
     baseFamily: 'Varela',
     label: 'Varela Regular',

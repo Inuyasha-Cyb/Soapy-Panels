@@ -9630,6 +9630,8 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       var textAreaEl = $("#propText");
       var fontSizeRangeInput = $("#propFontSizeRange");
+      var fontWeightRow = $("#textInspectorFontWeightRow");
+      var fontWeightSelect = $("#propFontWeight");
       var textPanelPropX = $("#textPanelPropX");
       var textPanelPropY = $("#textPanelPropY");
       var textPanelPropW = $("#textPanelPropW");
@@ -13531,31 +13533,125 @@ window.SoapyPanels = window.SoapyPanels || {};
       bindTextInspectorMirrorInput(textPanelPropRot, $("#propRot"));
       bindTextInspectorRangeMirror(textPanelPropRotRange, textPanelPropRot);
 
+      var activeStepperRepeat = null;
+      var pointerStepperClickButton = null;
+
+      function stopStepperRepeat() {
+        if (!activeStepperRepeat) return;
+        clearTimeout(activeStepperRepeat.timer);
+        activeStepperRepeat = null;
+      }
+
+      function applyStepperChange(stepButton, selector, getDelta) {
+        if (!stepButton) return false;
+        var targetId = stepButton.getAttribute(selector);
+        var target = targetId ? document.getElementById(targetId) : null;
+        if (!target || target.disabled) return false;
+        var delta = getDelta(stepButton);
+        if (!Number.isFinite(delta) || delta === 0) return false;
+        var step = parseFloat(target.getAttribute("step") || "1");
+        if (!Number.isFinite(step) || step === 0) step = 1;
+        var current = parseFloat(target.value);
+        if (!Number.isFinite(current)) current = 0;
+        var next = current + delta * step;
+        var min = parseFloat(target.getAttribute("min"));
+        var max = parseFloat(target.getAttribute("max"));
+        if (Number.isFinite(min)) next = Math.max(min, next);
+        if (Number.isFinite(max)) next = Math.min(max, next);
+        target.value = String(Math.round(next * 1000) / 1000);
+        dispatchTextInspectorInput(target, "input");
+        dispatchTextInspectorInput(target, "change");
+        return true;
+      }
+
+      function bindStepperRepeat(panel, selector, targetAttribute, getDelta) {
+        if (!panel) return;
+        panel.addEventListener("pointerdown", function (event) {
+          var stepButton = event.target && event.target.closest
+            ? event.target.closest(selector)
+            : null;
+          if (!stepButton || !panel.contains(stepButton)) return;
+          if (event.button != null && event.button !== 0) return;
+          if (!applyStepperChange(stepButton, targetAttribute, getDelta)) return;
+          event.preventDefault();
+          stopStepperRepeat();
+          pointerStepperClickButton = stepButton;
+          var repeatInterval = 140;
+          var repeat = function () {
+            if (
+              !activeStepperRepeat ||
+              activeStepperRepeat.button !== stepButton ||
+              !stepButton.isConnected ||
+              !panel.contains(stepButton)
+            ) {
+              stopStepperRepeat();
+              return;
+            }
+            applyStepperChange(stepButton, targetAttribute, getDelta);
+            repeatInterval = Math.max(60, repeatInterval - 15);
+            activeStepperRepeat.timer = setTimeout(repeat, repeatInterval);
+          };
+          activeStepperRepeat = {
+            button: stepButton,
+            pointerId: event.pointerId,
+            timer: setTimeout(repeat, 350),
+          };
+        });
+
+        panel.addEventListener("click", function (event) {
+          var stepButton = event.target && event.target.closest
+            ? event.target.closest(selector)
+            : null;
+          if (!stepButton || !panel.contains(stepButton)) return;
+          if (pointerStepperClickButton === stepButton) {
+            pointerStepperClickButton = null;
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          applyStepperChange(stepButton, targetAttribute, getDelta);
+        });
+      }
+
+      document.addEventListener("pointerup", function (event) {
+        if (
+          activeStepperRepeat &&
+          (event.pointerId == null || activeStepperRepeat.pointerId === event.pointerId)
+        ) {
+          stopStepperRepeat();
+        }
+        if (pointerStepperClickButton) {
+          var button = pointerStepperClickButton;
+          setTimeout(function () {
+            if (pointerStepperClickButton === button) pointerStepperClickButton = null;
+          }, 0);
+        }
+      });
+      document.addEventListener("pointercancel", function () {
+        stopStepperRepeat();
+        pointerStepperClickButton = null;
+      });
+      window.addEventListener("blur", function () {
+        stopStepperRepeat();
+        pointerStepperClickButton = null;
+      });
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          stopStepperRepeat();
+          pointerStepperClickButton = null;
+        }
+      });
+
       var textInspectorPanel = $("#textPanel");
       if (textInspectorPanel) {
-        textInspectorPanel.addEventListener("click", function (event) {
-          var stepButton = event.target && event.target.closest
-            ? event.target.closest("[data-text-step-target]")
-            : null;
-          if (!stepButton || !textInspectorPanel.contains(stepButton)) return;
-          event.preventDefault();
-          var targetId = stepButton.getAttribute("data-text-step-target");
-          var target = targetId ? document.getElementById(targetId) : null;
-          if (!target) return;
-          var delta = parseFloat(stepButton.getAttribute("data-text-step") || "0");
-          var step = parseFloat(target.getAttribute("step") || "1");
-          if (!Number.isFinite(step) || step === 0) step = 1;
-          var current = parseFloat(target.value);
-          if (!Number.isFinite(current)) current = 0;
-          var next = current + delta * step;
-          var min = parseFloat(target.getAttribute("min"));
-          var max = parseFloat(target.getAttribute("max"));
-          if (Number.isFinite(min)) next = Math.max(min, next);
-          if (Number.isFinite(max)) next = Math.min(max, next);
-          target.value = String(Math.round(next * 1000) / 1000);
-          dispatchTextInspectorInput(target, "input");
-          dispatchTextInspectorInput(target, "change");
-        });
+        bindStepperRepeat(
+          textInspectorPanel,
+          "[data-text-step-target]",
+          "data-text-step-target",
+          function (button) {
+            return parseFloat(button.getAttribute("data-text-step") || "0");
+          },
+        );
 
         textInspectorPanel.addEventListener("click", function (event) {
           var modeButton = event.target && event.target.closest
@@ -13579,29 +13675,14 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       var appearanceInspectorPanel = $("#appearancePanel");
       if (appearanceInspectorPanel) {
-        appearanceInspectorPanel.addEventListener("click", function (event) {
-          var stepButton = event.target && event.target.closest
-            ? event.target.closest("[data-appearance-step-target]")
-            : null;
-          if (!stepButton || !appearanceInspectorPanel.contains(stepButton)) return;
-          event.preventDefault();
-          var targetId = stepButton.getAttribute("data-appearance-step-target");
-          var target = targetId ? document.getElementById(targetId) : null;
-          if (!target || target.disabled) return;
-          var delta = parseFloat(stepButton.getAttribute("data-appearance-step") || "0");
-          var step = parseFloat(target.getAttribute("step") || "1");
-          if (!Number.isFinite(step) || step === 0) step = 1;
-          var current = parseFloat(target.value);
-          if (!Number.isFinite(current)) current = 0;
-          var next = current + delta * step;
-          var min = parseFloat(target.getAttribute("min"));
-          var max = parseFloat(target.getAttribute("max"));
-          if (Number.isFinite(min)) next = Math.max(min, next);
-          if (Number.isFinite(max)) next = Math.min(max, next);
-          target.value = String(Math.round(next * 1000) / 1000);
-          dispatchTextInspectorInput(target, "input");
-          dispatchTextInspectorInput(target, "change");
-        });
+        bindStepperRepeat(
+          appearanceInspectorPanel,
+          "[data-appearance-step-target]",
+          "data-appearance-step-target",
+          function (button) {
+            return parseFloat(button.getAttribute("data-appearance-step") || "0");
+          },
+        );
 
         appearanceInspectorPanel.addEventListener("click", function (event) {
           var modeButton = event.target && event.target.closest
@@ -13627,33 +13708,18 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       var tailInspectorPanel = $("#tailPanel");
       if (tailInspectorPanel) {
-        tailInspectorPanel.addEventListener("click", function (event) {
-          var stepButton = event.target && event.target.closest
-            ? event.target.closest("[data-tail-step-target]")
-            : null;
-          if (!stepButton || !tailInspectorPanel.contains(stepButton)) return;
-          event.preventDefault();
-          var targetId = stepButton.getAttribute("data-tail-step-target");
-          var target = targetId ? document.getElementById(targetId) : null;
-          if (!target || target.disabled) return;
-          var delta = parseFloat(
-            stepButton.getAttribute("data-tail-step") ||
-            stepButton.getAttribute("data-step-delta") ||
-            "0",
-          );
-          var step = parseFloat(target.getAttribute("step") || "1");
-          if (!Number.isFinite(step) || step === 0) step = 1;
-          var current = parseFloat(target.value);
-          if (!Number.isFinite(current)) current = 0;
-          var next = current + delta * step;
-          var min = parseFloat(target.getAttribute("min"));
-          var max = parseFloat(target.getAttribute("max"));
-          if (Number.isFinite(min)) next = Math.max(min, next);
-          if (Number.isFinite(max)) next = Math.min(max, next);
-          target.value = String(Math.round(next * 1000) / 1000);
-          dispatchTextInspectorInput(target, "input");
-          dispatchTextInspectorInput(target, "change");
-        });
+        bindStepperRepeat(
+          tailInspectorPanel,
+          "[data-tail-step-target]",
+          "data-tail-step-target",
+          function (button) {
+            return parseFloat(
+              button.getAttribute("data-tail-step") ||
+              button.getAttribute("data-step-delta") ||
+              "0",
+            );
+          },
+        );
 
         tailInspectorPanel.addEventListener("click", function (event) {
           var modeButton = event.target && event.target.closest
@@ -13788,6 +13854,8 @@ window.SoapyPanels = window.SoapyPanels || {};
 
           b[conf.prop] = next;
 
+          if (style === "bold") syncFontWeightState(b);
+
           setTextStyleButtonState(style, next, false);
 
           ensureFontDraw(b);
@@ -13805,6 +13873,23 @@ window.SoapyPanels = window.SoapyPanels || {};
         });
 
       });
+
+      if (fontWeightSelect) {
+        fontWeightSelect.addEventListener("change", function () {
+          var b = getSelected();
+          if (!b) return;
+          var selectedWeight = parseFontWeightValue(fontWeightSelect.value);
+          if (selectedWeight == null) return;
+          b.fontWeightBase = String(selectedWeight);
+          syncFontWeightState(b);
+          ensureFontDraw(b);
+          updateTextPreview(b);
+          markBubbleDirty(b);
+          draw();
+          updatePanels();
+          scheduleCommit();
+        });
+      }
 
       if (textOutlineToggle) {
 
@@ -17790,6 +17875,7 @@ window.SoapyPanels = window.SoapyPanels || {};
           font: "Kalam, Arial, sans-serif",
 
           fontWeight: null,
+          fontWeightBase: "400",
 
           fontStyle: null,
 
@@ -18287,6 +18373,7 @@ window.SoapyPanels = window.SoapyPanels || {};
           font: "Kalam, Arial, sans-serif",
 
           fontWeight: null,
+          fontWeightBase: "400",
 
           fontStyle: null,
 
@@ -20563,9 +20650,104 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       }
 
+      function getSelectedFontOption() {
+        var select = $("#propFont");
+        if (!select || typeof select.selectedIndex !== "number" || select.selectedIndex < 0) return null;
+        return select.options[select.selectedIndex] || null;
+      }
+
+      function parseFontWeightMetadata(option) {
+        if (!option || !option.dataset || !option.dataset.fontWeights) return null;
+        try {
+          var parsed = JSON.parse(option.dataset.fontWeights);
+          if (!Array.isArray(parsed) || !parsed.length) return null;
+          return {
+            weights: parsed.map(function (item) {
+              if (!item || item.value == null) return null;
+              var value = parseFontWeightValue(item.value);
+              if (value == null) return null;
+              return {
+                value: String(value),
+                label: item.label || String(value),
+                styles: Array.isArray(item.styles) ? item.styles : [],
+              };
+            }).filter(Boolean),
+            defaultWeight: option.dataset.fontDefaultWeight || "400",
+            regularWeight: option.dataset.fontRegularWeight || "400",
+            nearestBoldWeight: option.dataset.fontNearestBoldWeight || "700",
+          };
+        } catch (_error) {
+          return null;
+        }
+      }
+
+      function nearestAvailableFontWeight(requested, metadata) {
+        var options = metadata && Array.isArray(metadata.weights) ? metadata.weights : [];
+        if (!options.length) return requested != null ? String(requested) : "400";
+        var exact = options.find(function (option) { return String(option.value) === String(requested); });
+        if (exact) return exact.value;
+        var target = requested == null ? 400 : Number(requested);
+        options.sort(function (a, b) {
+          var distance = Math.abs(Number(a.value) - target) - Math.abs(Number(b.value) - target);
+          return distance || Number(a.value) - Number(b.value);
+        });
+        return options[0].value;
+      }
+
+      function getFontWeightBase(bubble, metadata) {
+        var requested = parseFontWeightValue(bubble && bubble.fontWeightBase);
+        if (requested == null) requested = parseFontWeightValue(bubble && bubble.fontWeight);
+        if (requested == null && metadata) requested = parseFontWeightValue(metadata.defaultWeight);
+        if (requested == null) requested = 400;
+        return nearestAvailableFontWeight(requested, metadata);
+      }
+
+      function resolveEffectiveFontWeight(bubble, metadata) {
+        var base = getFontWeightBase(bubble, metadata);
+        if (bubble && bubble.textBold) {
+          var boldWeight = metadata && metadata.nearestBoldWeight
+            ? metadata.nearestBoldWeight
+            : Number(base) >= 600 ? base : "700";
+          return String(boldWeight);
+        }
+        return String(base);
+      }
+
+      function syncFontWeightState(bubble) {
+        if (!bubble) return null;
+        var metadata = parseFontWeightMetadata(getSelectedFontOption());
+        var base = getFontWeightBase(bubble, metadata);
+        bubble.fontWeightBase = String(base);
+        bubble.fontWeight = resolveEffectiveFontWeight(bubble, metadata);
+        return metadata;
+      }
+
+      function syncFontWeightControl(bubble) {
+        if (!fontWeightRow || !fontWeightSelect) return;
+        var metadata = parseFontWeightMetadata(getSelectedFontOption());
+        var options = metadata && metadata.weights ? metadata.weights : [];
+        fontWeightSelect.textContent = "";
+        if (!bubble || options.length <= 1) {
+          fontWeightRow.hidden = true;
+          fontWeightSelect.disabled = true;
+          return;
+        }
+        options.forEach(function (option) {
+          var node = document.createElement("option");
+          node.value = option.value;
+          node.textContent = option.label;
+          fontWeightSelect.appendChild(node);
+        });
+        fontWeightSelect.value = getFontWeightBase(bubble, metadata);
+        fontWeightRow.hidden = false;
+        fontWeightSelect.disabled = false;
+      }
+
       function inferDefaultBold(bubble) {
 
-        var base = parseFontWeightValue(bubble && bubble.fontWeight);
+        var base = parseFontWeightValue(bubble && bubble.fontWeightBase);
+
+        if (base == null) base = parseFontWeightValue(bubble && bubble.fontWeight);
 
         if (base != null) return base >= 600;
 
@@ -20585,37 +20767,22 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       function resolveFontFamily(bubble) {
 
-        return bubble && typeof bubble.font === "string" && bubble.font.trim()
-
-          ? appendMultilingualFontFallbacks(bubble.font)
-
+        var selectedFont = bubble && typeof bubble.fontBaseFamily === "string" && bubble.fontBaseFamily.trim()
+          ? bubble.fontBaseFamily
+          : bubble && typeof bubble.font === "string" && bubble.font.trim()
+            ? bubble.font
+            : null;
+        return selectedFont
+          ? appendMultilingualFontFallbacks(selectedFont)
           : appendMultilingualFontFallbacks(DEFAULT_BUBBLE_FONT_STACK);
 
       }
 
       function resolveFontWeight(bubble) {
 
-        var base = parseFontWeightValue(bubble && bubble.fontWeight);
-
-        var isBold = bubble && bubble.textBold;
-
-        if (isBold == null) isBold = inferDefaultBold(bubble);
-
-        if (isBold) {
-
-          if (base != null) return String(base >= 600 ? base : 700);
-
-          return "700";
-
-        }
-
-        if (base != null) {
-
-          return String(base <= 500 ? base : 400);
-
-        }
-
-        return "400";
+        var metadata = parseFontWeightMetadata(getSelectedFontOption());
+        if (bubble && bubble.textBold == null) bubble.textBold = inferDefaultBold(bubble);
+        return resolveEffectiveFontWeight(bubble, metadata);
 
       }
 
@@ -20632,7 +20799,17 @@ window.SoapyPanels = window.SoapyPanels || {};
         if (italic == null) italic = inferDefaultItalic(bubble);
 
         if (italic) {
-
+          var metadata = parseFontWeightMetadata(getSelectedFontOption());
+          var effectiveWeight = resolveFontWeight(bubble);
+          var matchingWeight = metadata && metadata.weights
+            ? metadata.weights.find(function (option) {
+                return String(option.value) === String(effectiveWeight);
+              })
+            : null;
+          if (matchingWeight && matchingWeight.styles) {
+            if (matchingWeight.styles.includes("italic")) return "italic";
+            if (matchingWeight.styles.includes("oblique")) return "oblique";
+          }
           return base === "italic" || base === "oblique" ? base : "italic";
 
         }
@@ -53817,6 +53994,36 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       }
 
+      function hitTestSelectedSticker(px, py) {
+        if (!state || !state.lockBgImages) return null;
+        if (state.selectedBgImageId == null || state.selectedBgImageId === "") return null;
+
+        var entry = getBackgroundImageById(state.selectedBgImageId);
+        if (!entry || !isStickerBackground(entry)) return null;
+
+        var bounds = getBackgroundImageBounds(entry);
+        if (!bounds) return null;
+
+        if (getBackgroundImageFlipHandleHit(bounds, px, py)) {
+          return { bgImage: entry, part: "bgImageFlip" };
+        }
+
+        if (getBackgroundImageRotateHandleHit(bounds, px, py)) {
+          return { bgImage: entry, part: "bgImageRotate" };
+        }
+
+        var handleCode = getBackgroundImageHandleHit(bounds, px, py);
+        if (handleCode) {
+          return { bgImage: entry, part: "bgImageHandle", code: handleCode };
+        }
+
+        if (ptInRect(px, py, bounds.x, bounds.y, bounds.w, bounds.h)) {
+          return { bgImage: entry, part: "bg-image" };
+        }
+
+        return null;
+      }
+
 
       function hitTestTail(b, px, py) {
         if (!b || !b.tail || !b.tail.enabled) return false;
@@ -56698,6 +56905,11 @@ window.SoapyPanels = window.SoapyPanels || {};
             resetBubbleSelectionCycle();
             hit = selectedBubbleHit;
           }
+        }
+
+        if (!hit) {
+          var selectedStickerHit = hitTestSelectedSticker(p.x, p.y);
+          if (selectedStickerHit) hit = selectedStickerHit;
         }
 
         if (!hit && e.altKey) {
@@ -68333,6 +68545,19 @@ window.SoapyPanels = window.SoapyPanels || {};
 
       var dockerGroup = $("#dockerTabs");
 
+      var dockLayoutController = null;
+
+      var modernDockLayout = null;
+
+      var modernDockerActive = null;
+
+      var activeDockLayoutName = "modern";
+
+      var DOCK_LAYOUT_STORAGE_KEY = "sp.dockLayout";
+
+      var activeModernDockStyle = "elevated-studio";
+
+      var MODERN_DOCK_STYLE_STORAGE_KEY = "sp.modernDockStyle";
       var asidePanelEl = document.getElementById("asidePanel");
 
       var dockerTabs = dockerGroup
@@ -68768,6 +68993,8 @@ window.SoapyPanels = window.SoapyPanels || {};
 
         }
 
+        syncDockLayoutController(false);
+
       }
 
       function setDockerVisibility(name, visible) {
@@ -68822,6 +69049,128 @@ window.SoapyPanels = window.SoapyPanels || {};
 
         }
 
+        syncDockLayoutController(false);
+
+      }
+
+      function getModernVisibleDockerIds() {
+        return dockerTabs
+          .filter(function (tab) { return !tab.hidden; })
+          .map(function (tab) { return tab.getAttribute("data-docker"); })
+          .filter(Boolean);
+      }
+
+      function setModernDockerPanel(name) {
+        var visibleIds = getModernVisibleDockerIds();
+        if (!name || visibleIds.indexOf(name) === -1) name = visibleIds[0] || null;
+        modernDockerActive = name;
+        Object.keys(dockerPanels).forEach(function (key) {
+          var panel = dockerPanels[key];
+          if (panel) panel.classList.toggle("active", !!name && key === name);
+        });
+        Object.keys(dockerPanelContainers).forEach(function (row) {
+          var container = dockerPanelContainers[row];
+          if (!container) return;
+          var active = !!name && (dockerRowByName[name] || "primary") === row;
+          container.classList.toggle("modern-active-panel", active);
+          container.classList.toggle("collapsed", !active);
+          container.setAttribute("aria-hidden", active ? "false" : "true");
+        });
+      }
+
+      function syncDockLayoutController(ensureActiveVisible) {
+        if (!dockLayoutController) return;
+        var visibleIds = getModernVisibleDockerIds();
+        if (!modernDockerActive || visibleIds.indexOf(modernDockerActive) === -1) {
+          modernDockerActive = visibleIds[0] || null;
+        }
+        dockLayoutController.update({
+          visibleTabIds: visibleIds,
+          activeTabId: modernDockerActive,
+          ensureActiveVisible: !!ensureActiveVisible,
+        });
+        if (activeDockLayoutName === "modern") setModernDockerPanel(modernDockerActive);
+      }
+
+      function readDockLayoutPreference() {
+        var value = "modern";
+        try {
+          if (typeof localStorage !== "undefined") value = localStorage.getItem(DOCK_LAYOUT_STORAGE_KEY) || value;
+        } catch (_e) { }
+        var helpers = window.SoapyPanels && window.SoapyPanels.ui && window.SoapyPanels.ui.dockLayouts;
+        return helpers && typeof helpers.normalizeDockLayout === "function"
+          ? helpers.normalizeDockLayout(value)
+          : value === "classic" ? "classic" : "modern";
+      }
+
+      function readModernDockStylePreference() {
+        var value = "elevated-studio";
+        try {
+          if (typeof localStorage !== "undefined") value = localStorage.getItem(MODERN_DOCK_STYLE_STORAGE_KEY) || value;
+        } catch (_e) { }
+        var helpers = window.SoapyPanels && window.SoapyPanels.ui && window.SoapyPanels.ui.dockLayouts;
+        return helpers && typeof helpers.normalizeModernDockStyle === "function"
+          ? helpers.normalizeModernDockStyle(value)
+          : "elevated-studio";
+      }
+
+      function applyModernDockStyle(style, options) {
+        options = options || {};
+        var helpers = window.SoapyPanels && window.SoapyPanels.ui && window.SoapyPanels.ui.dockLayouts;
+        activeModernDockStyle = helpers && typeof helpers.normalizeModernDockStyle === "function"
+          ? helpers.normalizeModernDockStyle(style)
+          : "elevated-studio";
+        if (modernDockLayout && typeof modernDockLayout.setStyle === "function") modernDockLayout.setStyle(activeModernDockStyle);
+        if (options.persist !== false) {
+          try {
+            if (typeof localStorage !== "undefined") localStorage.setItem(MODERN_DOCK_STYLE_STORAGE_KEY, activeModernDockStyle);
+          } catch (_e) { }
+        }
+      }
+
+      function updateDockLayoutMenuButton() {
+        var button = document.getElementById("mi-dock-layout-chooser");
+        if (!button) return;
+        button.textContent = tr("menu.chooseDockLayoutCurrent", {
+          layout: tr(activeDockLayoutName === "modern" ? "dockLayouts.modern" : "dockLayouts.twoRow"),
+        });
+      }
+
+      function applyDockLayout(layoutName, options) {
+        options = options || {};
+        var helpers = window.SoapyPanels && window.SoapyPanels.ui && window.SoapyPanels.ui.dockLayouts;
+        var next = helpers && typeof helpers.normalizeDockLayout === "function"
+          ? helpers.normalizeDockLayout(layoutName)
+          : layoutName === "classic" ? "classic" : "modern";
+        activeDockLayoutName = next;
+        if (options.persist !== false) {
+          try {
+            if (typeof localStorage !== "undefined") localStorage.setItem(DOCK_LAYOUT_STORAGE_KEY, next);
+          } catch (_e) { }
+        }
+        if (dockLayoutController) dockLayoutController.setLayout(next);
+        if (next === "modern") {
+          setModernDockerPanel(modernDockerActive);
+          syncDockLayoutController(true);
+        } else {
+          Object.keys(dockerPanelContainers).forEach(function (row) {
+            var container = dockerPanelContainers[row];
+            if (container) container.classList.remove("modern-active-panel");
+          });
+          Object.keys(dockerRows).forEach(function (row) {
+            setActiveDocker(row, dockerRows[row] && dockerRows[row].active);
+          });
+        }
+        updateDockLayoutMenuButton();
+      }
+
+      function seedModernDockerActive() {
+        var visibleIds = getModernVisibleDockerIds();
+        var preferred = [dockerRows.primary && dockerRows.primary.active, dockerRows.secondary && dockerRows.secondary.active];
+        for (var index = 0; index < preferred.length; index++) {
+          if (preferred[index] && visibleIds.indexOf(preferred[index]) !== -1) return preferred[index];
+        }
+        return visibleIds[0] || null;
       }
 
       function getSelectionInspectorSectionForDocker(name) {
@@ -68839,6 +69188,37 @@ window.SoapyPanels = window.SoapyPanels || {};
         incrementSelectionPerformanceCounter("lazySectionFlushes");
         flushSelectionPanelSync(selectionUiRevision);
       }
+
+      (function initializeDockLayouts() {
+        var ui = window.SoapyPanels && window.SoapyPanels.ui;
+        if (!dockerGroup || !ui || !ui.dockLayouts || !ui.dockController) return;
+        var layouts = ui.dockLayouts;
+        activeModernDockStyle = readModernDockStylePreference();
+        modernDockLayout = new layouts.ModernDockLayout({
+          root: dockerGroup,
+          tabs: dockerTabs,
+          style: activeModernDockStyle,
+        });
+        var classic = new layouts.ClassicDockLayout({ root: dockerGroup });
+        dockLayoutController = ui.dockController.createDockController({
+          root: dockerGroup,
+          layouts: { classic: classic, modern: modernDockLayout },
+          onModernSelect: function (name, metadata) {
+            var tab = dockerTabLookup[name];
+            if (!tab || tab.hidden) return;
+            ensureSelectionInspectorSectionFresh(name);
+            modernDockerActive = name;
+            setModernDockerPanel(name);
+            syncDockLayoutController(true);
+            var button = modernDockLayout.buttons && modernDockLayout.buttons[name];
+            if (metadata && metadata.focus && button) button.focus();
+          },
+        });
+        modernDockLayout.setStyle(activeModernDockStyle);
+        modernDockerActive = seedModernDockerActive();
+        applyDockLayout(readDockLayoutPreference(), { persist: false });
+        syncDockLayoutController(false);
+      })();
 
       dockerTabs.forEach(function (btn) {
 
@@ -69400,6 +69780,9 @@ window.SoapyPanels = window.SoapyPanels || {};
             }
 
           }
+
+          syncFontWeightState(b);
+          syncFontWeightControl(b);
 
           ensureFontDraw(b);
 
@@ -75217,61 +75600,30 @@ window.SoapyPanels = window.SoapyPanels || {};
 
               var ds = option.dataset || {};
 
-              var weightRaw = ds.fontWeight || "";
-
-              var styleRaw = ds.fontStyle || "";
-
               var baseFamily = ds.fontBaseFamily || "";
-
-              var descriptor = ds.fontDescriptor || "";
-
-              var weightNum = parseFontWeightValue(weightRaw);
-
-              if (weightNum != null) {
-
-                b.fontWeight = String(weightNum);
-
-                b.textBold = weightNum >= 600;
-
-              } else {
-
-                b.fontWeight = null;
-
-              }
-
-              if (styleRaw) {
-
-                var styleNorm = styleRaw.toLowerCase();
-
-                if (styleNorm !== "italic" && styleNorm !== "oblique" && styleNorm !== "normal") {
-
-                  styleNorm = "normal";
-
-                }
-
-                b.fontStyle = styleNorm === "normal" ? null : styleNorm;
-
-                b.textItalic = styleNorm === "italic" || styleNorm === "oblique";
-
-              } else {
-
+              var metadata = parseFontWeightMetadata(option);
+              if (baseFamily && metadata) {
+                var requestedWeight = parseFontWeightValue(b.fontWeightBase);
+                if (requestedWeight == null) requestedWeight = parseFontWeightValue(b.fontWeight);
+                if (requestedWeight == null) requestedWeight = parseFontWeightValue(metadata.defaultWeight);
+                b.fontWeightBase = nearestAvailableFontWeight(requestedWeight, metadata);
                 b.fontStyle = null;
-
+                syncFontWeightState(b);
+              } else if (b.fontWeightBase == null) {
+                b.fontWeightBase = "400";
+                syncFontWeightState(b);
               }
 
               if (baseFamily) b.fontBaseFamily = baseFamily;
 
               else if (b.fontBaseFamily) delete b.fontBaseFamily;
 
-              if (descriptor) b.fontDescriptor = descriptor;
-
-              else if (b.fontDescriptor) delete b.fontDescriptor;
+              if (b.fontDescriptor) delete b.fontDescriptor;
 
             } else {
 
-              b.fontWeight = null;
-
-              b.fontStyle = null;
+              if (b.fontWeightBase == null) b.fontWeightBase = "400";
+              syncFontWeightState(b);
 
             }
 
@@ -80507,10 +80859,44 @@ window.SoapyPanels = window.SoapyPanels || {};
         };
       }
 
+      var lastGeneratedExportTimestamp = -1;
+      var generatedExportSequence = 0;
+
+      function createTimestampedExportName(extension) {
+        var timestamp = Date.now();
+        var date = new Date(timestamp);
+        var normalizedExtension = String(extension || "").replace(/^\.+/, "").toLowerCase() || "png";
+        var pad = function (value, width) {
+          return String(value).padStart(width, "0");
+        };
+        if (timestamp === lastGeneratedExportTimestamp) {
+          generatedExportSequence += 1;
+        } else {
+          lastGeneratedExportTimestamp = timestamp;
+          generatedExportSequence = 0;
+        }
+        var suffix = generatedExportSequence > 0 ? "-" + generatedExportSequence : "";
+        return (
+          "bubbles-" +
+          date.getUTCFullYear() +
+          pad(date.getUTCMonth() + 1, 2) +
+          pad(date.getUTCDate(), 2) +
+          "-" +
+          pad(date.getUTCHours(), 2) +
+          pad(date.getUTCMinutes(), 2) +
+          pad(date.getUTCSeconds(), 2) +
+          "-" +
+          pad(date.getUTCMilliseconds(), 3) +
+          suffix +
+          "." +
+          normalizedExtension
+        );
+      }
+
       function getExportSaveOptions(ext, mime, description) {
         var extension = String(ext || "").replace(/^\.+/, "").toLowerCase();
         return {
-          suggestedName: "bubbles." + extension,
+          suggestedName: createTimestampedExportName(extension),
           mime: mime,
           extensions: [extension],
           description: description,
@@ -83660,6 +84046,18 @@ window.SoapyPanels = window.SoapyPanels || {};
 
         if (!b) return;
 
+        if (
+          window.SoapyPanels &&
+          window.SoapyPanels.fonts &&
+          typeof window.SoapyPanels.fonts.canonicalizeFontValue === "function"
+        ) {
+          var canonicalFontValue = window.SoapyPanels.fonts.canonicalizeFontValue(
+            b.font,
+            b.fontBaseFamily,
+          );
+          if (canonicalFontValue && canonicalFontValue !== b.font) b.font = canonicalFontValue;
+        }
+
         normalizeBubbleOutlineFields(b);
 
         if (typeof b.renderAboveStickers !== "boolean") b.renderAboveStickers = false;
@@ -83691,6 +84089,10 @@ window.SoapyPanels = window.SoapyPanels || {};
         });
 
         var parsedWeight = parseFontWeightValue(b.fontWeight);
+
+        var parsedWeightBase = parseFontWeightValue(b.fontWeightBase);
+        if (parsedWeightBase == null) parsedWeightBase = parsedWeight;
+        b.fontWeightBase = parsedWeightBase != null ? String(parsedWeightBase) : "400";
 
         b.fontWeight = parsedWeight != null ? String(parsedWeight) : null;
 
@@ -111350,6 +111752,9 @@ window.SoapyPanels = window.SoapyPanels || {};
         } else if (kind === "themes") {
           titleText = tr("themes.title");
           bodyHtml = renderThemeGalleryBody();
+        } else if (kind === "dock-layouts") {
+          titleText = tr("dockLayouts.title");
+          bodyHtml = renderDockLayoutBody();
         } else if (kind === "language") {
           titleText = tr("language.title");
           bodyHtml = renderLanguageBody();
@@ -111363,6 +111768,7 @@ window.SoapyPanels = window.SoapyPanels || {};
         if (helpDialogEl) {
           helpDialogEl.classList.toggle("help-dialog-doc", isDoc);
           helpDialogEl.classList.toggle("help-dialog-themes", kind === "themes");
+          helpDialogEl.classList.toggle("help-dialog-dock-layouts", kind === "dock-layouts");
         }
         if (kind === "language") {
           setStartupLanguagePromptChrome(startupLanguagePromptRequired);
@@ -111373,6 +111779,7 @@ window.SoapyPanels = window.SoapyPanels || {};
         if (kind === "about") attachSupportLinkActions();
         if (kind === "language") attachLanguageActions();
         if (kind === "themes") attachThemeGalleryActions();
+        if (kind === "dock-layouts") attachDockLayoutActions();
         if (kind === "monetization") {
           attachMonetizationActions();
           updateMonetizationOverlayStatus();
@@ -111445,6 +111852,8 @@ window.SoapyPanels = window.SoapyPanels || {};
       }
 
       updateLanguageMenuButton();
+
+      updateDockLayoutMenuButton();
 
       if (startupLanguagePromptRequired) {
         openHelpOverlay("language");
@@ -112057,6 +112466,48 @@ window.SoapyPanels = window.SoapyPanels || {};
         });
       }
 
+      function renderDockLayoutBody() {
+        var helpers = window.SoapyPanels && window.SoapyPanels.ui && window.SoapyPanels.ui.dockLayouts;
+        var definitions = helpers && typeof helpers.getDockLayouts === "function" ? helpers.getDockLayouts() : [];
+        var cards = definitions.map(function (layout) {
+          var selected = activeDockLayoutName === layout.id;
+          return '<button type="button" class="dock-layout-option' + (selected ? " is-selected" : "") +
+            '" role="radio" aria-checked="' + (selected ? "true" : "false") +
+            '" data-dock-layout-option="' + escapeHtml(layout.id) + '">' +
+            '<span class="dock-layout-option-title">' + escapeHtml(tr(layout.labelKey)) + "</span>" +
+            '<span class="dock-layout-option-description">' + escapeHtml(tr(layout.descriptionKey)) + "</span>" +
+            "</button>";
+        }).join("");
+        return '<p class="theme-gallery-description">' + escapeHtml(tr("dockLayouts.description")) + "</p>" +
+          '<div class="dock-layout-gallery" role="radiogroup" aria-label="' + escapeHtml(tr("dockLayouts.optionsAria")) + '">' +
+          cards + "</div>";
+      }
+
+      function refreshDockLayoutGalleryState() {
+        if (!helpDialogContentEl || currentHelpOverlayKind !== "dock-layouts") return;
+        Array.prototype.forEach.call(helpDialogContentEl.querySelectorAll("[data-dock-layout-option]"), function (button) {
+          var selected = button.getAttribute("data-dock-layout-option") === activeDockLayoutName;
+          button.classList.toggle("is-selected", selected);
+          button.setAttribute("aria-checked", selected ? "true" : "false");
+        });
+      }
+
+      function rerenderDockLayoutGallery() {
+        if (!helpDialogContentEl || currentHelpOverlayKind !== "dock-layouts") return;
+        helpDialogContentEl.innerHTML = renderDockLayoutBody();
+        attachDockLayoutActions();
+      }
+
+      function attachDockLayoutActions() {
+        if (!helpDialogContentEl) return;
+        Array.prototype.forEach.call(helpDialogContentEl.querySelectorAll("[data-dock-layout-option]"), function (button) {
+          button.addEventListener("click", function () {
+            applyDockLayout(button.getAttribute("data-dock-layout-option") || "modern");
+            rerenderDockLayoutGallery();
+          });
+        });
+      }
+
       function initThemeManager() {
         var storedTheme = null;
         var storedFallback = null;
@@ -112135,6 +112586,10 @@ window.SoapyPanels = window.SoapyPanels || {};
         themeUpsellThemeId = "";
         pendingPremiumThemeId = "";
         openHelpOverlay("themes");
+      });
+
+      on("#mi-dock-layout-chooser", function () {
+        openHelpOverlay("dock-layouts");
       });
 
       initThemeManager();

@@ -105,6 +105,7 @@
     if (value === "zh" || value === "zh-cn" || value === "zh-hans") {
       return "zh-hans";
     }
+    if (value === "uk-ua" || value === "uk") return "uk";
     return value || "en";
   }
 
