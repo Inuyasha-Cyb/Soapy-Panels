@@ -37,7 +37,7 @@ jobs:
         run: npm ci
 
       - name: Build Linux AppImage
-        run: npm run dist:linux
+        run: npm run dist:linux -- --publish never
 
       - name: Validate Linux package
         run: npm run check:package:linux
