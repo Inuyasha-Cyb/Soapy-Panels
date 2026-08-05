@@ -1,0 +1,87 @@
+name: Release Linux AppImage
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release AppImage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Confirm tag matches package version
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [[ "$tag_version" != "$package_version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $package_version."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Linux AppImage
+        run: npm run dist:linux
+
+      - name: Validate Linux package
+        run: npm run check:package:linux
+
+      - name: Validate AppImage and create checksum
+        id: appimage
+        shell: bash
+        run: |
+          mapfile -t appimages < <(find dist/linux -maxdepth 1 -type f -name '*.AppImage' -print)
+          if [[ "${#appimages[@]}" -ne 1 ]]; then
+            echo "Expected exactly one AppImage in dist/linux, found ${#appimages[@]}."
+            exit 1
+          fi
+
+          appimage_path="${appimages[0]}"
+          if [[ ! -x "$appimage_path" ]]; then
+            echo "AppImage is not executable: $appimage_path"
+            exit 1
+          fi
+
+          "$appimage_path" --appimage-version
+
+          appimage_name="$(basename "$appimage_path")"
+          checksum_path="dist/linux/${appimage_name}.sha256"
+          (
+            cd dist/linux
+            sha256sum "$appimage_name" > "${appimage_name}.sha256"
+          )
+
+          echo "appimage_path=$appimage_path" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=$checksum_path" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPIMAGE_PATH: ${{ steps.appimage.outputs.appimage_path }}
+          CHECKSUM_PATH: ${{ steps.appimage.outputs.checksum_path }}
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$APPIMAGE_PATH" "$CHECKSUM_PATH" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$APPIMAGE_PATH" "$CHECKSUM_PATH" \
+              --verify-tag \
+              --generate-notes \
+              --title "Soapy Panels $GITHUB_REF_NAME"
+          fi

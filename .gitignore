@@ -25,5 +25,8 @@ docs/architecture/ipc-map.md
 docs/architecture/project-file-format.md
 docs/architecture/renderer-module-map.md
 .github/
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml
 AGENTS.md
 app/renderer/AGENTS.md
