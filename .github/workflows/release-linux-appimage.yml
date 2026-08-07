@@ -80,8 +80,11 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "$APPIMAGE_PATH" "$CHECKSUM_PATH" --clobber
           else
+            release_flags=(--verify-tag --generate-notes --title "Soapy Panels $GITHUB_REF_NAME")
+            if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+              release_flags+=(--prerelease)
+            fi
+
             gh release create "$GITHUB_REF_NAME" "$APPIMAGE_PATH" "$CHECKSUM_PATH" \
-              --verify-tag \
-              --generate-notes \
-              --title "Soapy Panels $GITHUB_REF_NAME"
+              "${release_flags[@]}"
           fi

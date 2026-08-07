@@ -1,5 +1,5 @@
 Soapy Panels — Third-Party Notices
-Generated: 2026-08-06
+Generated: 2026-08-07
 
 This application bundles third-party software. The following notices are provided for compliance.
 
@@ -1315,7 +1315,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-soapy-panels@1.2.0
+soapy-panels@1.2.1-rc.1
 License: Apache-2.0
 
                                  Apache License
