@@ -23,6 +23,29 @@ if [[ -n "$expected_email" ]]; then
   }
 fi
 
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_sha:-}" ]] && continue
+  [[ "$local_sha" =~ ^0+$ ]] && continue
+
+  if [[ "${remote_sha:-}" =~ ^0+$ || -z "${remote_sha:-}" ]]; then
+    commits="$(git rev-list "$local_sha" --not --remotes=origin 2>/dev/null || true)"
+  else
+    commits="$(git rev-list "$remote_sha..$local_sha" 2>/dev/null || true)"
+  fi
+
+  while read -r commit; do
+    [[ -z "$commit" ]] && continue
+    author_name="$(git show -s --format=%an "$commit")"
+    author_email="$(git show -s --format=%ae "$commit")"
+    committer_name="$(git show -s --format=%cn "$commit")"
+    committer_email="$(git show -s --format=%ce "$commit")"
+    if [[ "$author_name" != "$expected_login" || "$committer_name" != "$expected_login" || "$author_email" != "$expected_email" || "$committer_email" != "$expected_email" ]]; then
+      printf 'Push blocked: commit %s does not use the configured Inuyasha-Cyb identity.\n' "$commit" >&2
+      exit 1
+    fi
+  done <<< "$commits"
+done
+
 remote="$(git remote get-url origin 2>/dev/null || true)"
 [[ "$remote" == "$expected_remote" ]] || {
   printf 'Push blocked: origin must be %s.\n' "$expected_remote" >&2
