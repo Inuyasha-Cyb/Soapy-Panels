@@ -306,7 +306,7 @@ Soapy.Panels@outlook.com.
 THIRD_PARTY_NOTICES.txt
 
 Soapy Panels — Third-Party Notices
-Generated: 2026-07-22
+Generated: 2026-08-06
 
 This application bundles third-party software. The following notices are provided for compliance.
 
