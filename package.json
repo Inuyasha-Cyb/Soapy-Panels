@@ -1,6 +1,6 @@
 {
   "name": "soapy-panels",
-  "version": "1.2.0",
+  "version": "1.2.1-rc.1",
   "description": "Speech-bubble maker and editor",
   "main": "app/main/index.js",
   "soapyEdition": "windows-store",
