@@ -293,6 +293,7 @@ function fallbackMetadata(displayName) {
   return {
     family,
     variantFamily: variantFamily || family,
+    legacyFamily: variantFamily && variantFamily !== family ? variantFamily : '',
     label,
     weight: weightToCss(weightValue),
     style,
@@ -330,6 +331,8 @@ function extractFontMetadata(filePath, basename) {
     return {
       family: familyName,
       variantFamily: variantFamily || familyName,
+      legacyFamily:
+        variantFamily && variantFamily !== familyName ? variantFamily : '',
       label: label || familyName,
       weight: weightCss,
       style,
@@ -395,11 +398,7 @@ function formatPreferenceValue(format) {
 }
 
 function normalizeFontKey(metadata) {
-  const family = (
-    metadata.variantFamily ||
-    metadata.family ||
-    ''
-  ).toLowerCase();
+  const family = String(metadata.family || '').toLowerCase();
   const weight = String(metadata.weight || '').toLowerCase();
   const style = String(metadata.style || '').toLowerCase();
   return [family, weight, style].join('|');
@@ -432,8 +431,9 @@ function readLocalFontEntries() {
       return;
     }
 
-    const cssFamily = metadata.variantFamily || metadata.family;
-    const slug = slugify(cssFamily) || slugify(basename) || 'font';
+    const cssFamily = metadata.family;
+    const variantSlug = `${cssFamily}-${metadata.weight}-${metadata.style}`;
+    const slug = slugify(variantSlug) || slugify(basename) || 'font';
     const id = `${slug}-${format}`;
 
     fontsByKey.set(key, {
@@ -443,6 +443,7 @@ function readLocalFontEntries() {
       format,
       sources: [source],
       family: cssFamily,
+      legacyFamily: metadata.legacyFamily || metadata.variantFamily || '',
       fallback: 'sans-serif',
       label: metadata.label,
       weight: metadata.weight,
@@ -471,7 +472,10 @@ function readLocalFontEntries() {
 }
 
 function createFontFaceCss(font) {
-  const escapedFamily = font.family.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const familyNames = [font.family];
+  if (font.legacyFamily && font.legacyFamily !== font.family) {
+    familyNames.push(font.legacyFamily);
+  }
   let sources = [];
   if (Array.isArray(font.sources) && font.sources.length) {
     sources = font.sources;
@@ -507,15 +511,22 @@ function createFontFaceCss(font) {
         return `url("${source.href}")${fmt}`;
       })
       .join(', ') || 'local("")';
-  return (
-    `@font-face {` +
-    ` font-family: "${escapedFamily}";` +
-    ` src: ${src};` +
-    ` font-display: swap;` +
-    ` font-style: ${font.style || 'normal'};` +
-    ` font-weight: ${font.weight || '400'};` +
-    ` }`
-  );
+  return familyNames
+    .map((familyName) => {
+      const escapedFamily = familyName
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
+      return (
+        `@font-face {` +
+        ` font-family: "${escapedFamily}";` +
+        ` src: ${src};` +
+        ` font-display: swap;` +
+        ` font-style: ${font.style || 'normal'};` +
+        ` font-weight: ${font.weight || '400'};` +
+        ` }`
+      );
+    })
+    .join('\n');
 }
 
 module.exports = {

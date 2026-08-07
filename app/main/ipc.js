@@ -18,6 +18,8 @@ const { CUSTOM_WINDOW_CHROME_ENABLED } = require("./config");
 const {
   createExportSaveTargetRegistry,
   ensureExportPathExtension,
+  isDefaultExportPath,
+  nextAvailableExportPath,
   normalizeExportSaveOptions,
 } = require("./export-save-targets");
 const { createExportStreamSessionRegistry } = require("./export-stream-sessions");
@@ -254,9 +256,11 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
     });
     if (result.canceled || !result.filePath) return { canceled: true };
 
-    const filePath = ensureExportPathExtension(result.filePath, normalized.extensions);
+    const selectedPath = ensureExportPathExtension(result.filePath, normalized.extensions);
+    const automatic = isDefaultExportPath(selectedPath, normalized.suggestedName);
+    const filePath = automatic ? nextAvailableExportPath(selectedPath) : selectedPath;
     const webContentsId = webContentsIdFromEvent(event);
-    const target = exportSaveTargets.add(filePath, webContentsId);
+    const target = exportSaveTargets.add(filePath, webContentsId, { automatic });
     if (event && event.sender && typeof event.sender.once === "function") {
       event.sender.once("destroyed", () => {
         exportSaveTargets.clearForWebContents(webContentsId);
@@ -273,8 +277,18 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
     try {
       const target = exportSaveTargets.consume(targetId, webContentsIdFromEvent(event));
       const buffer = bufferFromIpcPayload(payload);
-      await fs.promises.writeFile(target.filePath, buffer);
-      return { ok: true, fileName: path.basename(target.filePath) };
+      let filePath = target.filePath;
+      while (true) {
+        try {
+          await fs.promises.writeFile(filePath, buffer, {
+            flag: target.automatic ? "wx" : "w",
+          });
+          return { ok: true, fileName: path.basename(filePath) };
+        } catch (error) {
+          if (!target.automatic || !error || error.code !== "EEXIST") throw error;
+          filePath = nextAvailableExportPath(filePath);
+        }
+      }
     } catch (err) {
       return {
         ok: false,

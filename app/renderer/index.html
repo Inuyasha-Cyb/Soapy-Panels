@@ -169,6 +169,11 @@
                 Choose Theme…
               </button>
 
+              <button class="mi" id="mi-dock-layout-chooser" type="button" data-no-checkmark="true"
+                aria-haspopup="dialog" data-i18n="menu.chooseDockLayout">
+                Choose Dock Layout…
+              </button>
+
               <button class="mi" id="mi-canvas-only" type="button" title="Toggle canvas-only view (Tab)">
 
                 Show Only Canvas
@@ -435,13 +440,13 @@
 
             <div class="footer-pattern-control">
 
-              <span class="footer-control-label" data-i18n="footer.pattern">Pattern</span>
+              <span class="footer-control-label" data-i18n="footer.pattern">Gradient</span>
 
               <button type="button" class="footer-pattern-button footer-pattern-button--checker color-gradient-button"
-                data-gradient-target="bgColor" aria-haspopup="dialog" aria-label="Canvas pattern options"
+                data-gradient-target="bgColor" aria-haspopup="dialog" aria-label="Canvas gradient options"
                 data-i18n-aria-label="footer.canvasPatternOptions" data-i18n="footer.pattern">
 
-                Pattern
+                Gradient
 
               </button>
 
@@ -533,7 +538,7 @@
               data-locked="true" aria-label="Toggle canvas background lock"
               title="Unlock to allow background images to move" data-i18n-aria-label="footer.backgroundLock">
 
-              <span class="footer-lock-label">Unlock canvas images</span>
+              <span class="footer-lock-label">Allow image movement</span>
 
             </button>
 
@@ -936,7 +941,7 @@
                 <button type="button" class="add-bubble-option" data-bubble-type="connectorSoloBubble" role="menuitem"
                   tabindex="-1" data-i18n="shape.extraTail">
 
-                  Extra Tail
+                  Additional tail
 
                 </button>
 
@@ -1013,7 +1018,7 @@
                 <button type="button" class="bg-image-section-toggle sticker-subsection-toggle"
                   id="stickerLayersCollapseToggle" aria-expanded="true" aria-controls="stickerLayersContent">
 
-                  <span class="bg-image-section-label" data-i18n="stickers.canvas">Canvas stickers</span>
+                  <span class="bg-image-section-label" data-i18n="stickers.canvas">Stickers on canvas</span>
 
                   <span class="bg-image-collapse-caret add-bubble-caret" aria-hidden="true">&#x25BE;</span>
 
@@ -1028,7 +1033,7 @@
 
                       <div class="bg-image-card-text">
 
-                        <h3 class="bg-image-card-title" id="stickerLayerHeading" data-i18n="stickers.canvas">Canvas stickers</h3>
+                        <h3 class="bg-image-card-title" id="stickerLayerHeading" data-i18n="stickers.canvas">Stickers on canvas</h3>
 
                         <p class="bg-image-help" data-i18n="stickers.canvasHelp">Reorder or remove stickers that are already on the canvas.</p>
 
@@ -1377,6 +1382,13 @@
                   </label>
                 </div>
 
+                <div class="text-inspector-font-weight-row" id="textInspectorFontWeightRow" hidden>
+                  <label class="text-inspector-mini-field" for="propFontWeight">
+                    <span data-i18n="docker.fontWeight">Weight</span>
+                    <select id="propFontWeight" aria-label="Font weight" data-i18n-aria-label="docker.fontWeight"></select>
+                  </label>
+                </div>
+
                 <div class="text-inspector-mini-style" aria-label="Text style controls" data-i18n-aria-label="docker.textStyleControls">
                   <span data-i18n="common.style">Style</span>
                   <div class="text-inspector-style-buttons">
@@ -1392,8 +1404,8 @@
                     <span data-i18n="common.color">Color</span>
                     <input id="propTextFill" type="color" value="#000000" aria-label="Text color" data-i18n-aria-label="docker.textColor">
                   </label>
-                  <button type="button" class="secondary-button text-inspector-pattern-button" data-gradient-target="propTextFill" aria-label="Text pattern" data-i18n-aria-label="docker.textPattern">
-                    <span data-i18n="footer.pattern">Pattern</span>
+                  <button type="button" class="secondary-button text-inspector-pattern-button" data-gradient-target="propTextFill" aria-label="Text gradient" data-i18n-aria-label="docker.textPattern">
+                        <span data-i18n="footer.pattern">Gradient</span>
                   </button>
                 </div>
 
@@ -1541,7 +1553,7 @@
                       <button type="button" class="color-gradient-button" data-gradient-target="propTextStroke"
                         aria-haspopup="dialog" disabled>
 
-                        <span data-i18n="footer.pattern">Pattern</span>
+                        <span data-i18n="footer.pattern">Gradient</span>
 
                       </button>
 
@@ -1631,7 +1643,7 @@
                       <button type="button" class="color-gradient-button" data-gradient-target="propTextShadowColor"
                         aria-haspopup="dialog" disabled>
 
-                        <span data-i18n="footer.pattern">Pattern</span>
+                        <span data-i18n="footer.pattern">Gradient</span>
 
                       </button>
 
@@ -1832,7 +1844,7 @@
                       <button type="button" class="color-gradient-button" data-gradient-target="propTextHighlight"
                         aria-haspopup="dialog" disabled>
 
-                        <span data-i18n="footer.pattern">Pattern</span>
+                        <span data-i18n="footer.pattern">Gradient</span>
 
                       </button>
 
@@ -1911,7 +1923,7 @@
                       </label>
                       <button type="button" class="color-gradient-button appearance-inspector-pattern-button"
                         data-gradient-target="propFill" aria-haspopup="dialog">
-                        <span data-i18n="footer.pattern">Pattern</span>
+                        <span data-i18n="footer.pattern">Gradient</span>
                       </button>
                     </div>
 
@@ -1947,12 +1959,12 @@
                           </button>
                           <div id="strokeStyleDropdownMenu" class="aesthetic-dropdown-menu" hidden>
                             <button type="button" class="aesthetic-dropdown-option" data-value="solid" data-i18n="stroke.solid">Solid</button>
-                            <button type="button" class="aesthetic-dropdown-option" data-value="broken" data-i18n="stroke.broken">Broken outline</button>
+                            <button type="button" class="aesthetic-dropdown-option" data-value="broken" data-i18n="stroke.broken">Dashed outline</button>
                           </div>
                         </div>
                         <select id="propStrokeStyle" class="sr-only" aria-hidden="true" tabindex="-1">
                           <option value="solid" data-i18n="stroke.solid">Solid</option>
-                          <option value="broken" data-i18n="stroke.broken">Broken outline</option>
+                          <option value="broken" data-i18n="stroke.broken">Dashed outline</option>
                         </select>
                       </div>
                     </div>
@@ -1964,7 +1976,7 @@
                       </label>
                       <button type="button" class="color-gradient-button appearance-inspector-pattern-button"
                         data-gradient-target="propStroke" aria-haspopup="dialog">
-                        <span data-i18n="footer.pattern">Pattern</span>
+                        <span data-i18n="footer.pattern">Gradient</span>
                       </button>
                     </div>
 
@@ -2112,7 +2124,7 @@
 
                       <option value="solid" data-i18n="stroke.solid">Solid</option>
 
-                      <option value="broken" data-i18n="stroke.broken">Broken outline</option>
+                      <option value="broken" data-i18n="stroke.broken">Dashed outline</option>
 
                     </select>
 
@@ -2203,7 +2215,7 @@
                       <button type="button" class="color-gradient-button" data-gradient-target="propBubbleShadowColor"
                         aria-haspopup="dialog" disabled>
 
-                        <span data-i18n="footer.pattern">Pattern</span>
+                        <span data-i18n="footer.pattern">Gradient</span>
 
                       </button>
 
@@ -2284,7 +2296,7 @@
                         <button type="button" class="color-gradient-button"
                           data-gradient-target="propBubbleInnerShadowColor" aria-haspopup="dialog" disabled>
 
-                          <span data-i18n="footer.pattern">Pattern</span>
+                          <span data-i18n="footer.pattern">Gradient</span>
 
                         </button>
 
@@ -2333,7 +2345,7 @@
                         <button type="button" class="color-gradient-button"
                           data-gradient-target="propBubbleTailShadowColor" aria-haspopup="dialog" disabled>
 
-                          <span data-i18n="footer.pattern">Pattern</span>
+                          <span data-i18n="footer.pattern">Gradient</span>
 
                         </button>
 
@@ -2495,7 +2507,7 @@
                       </label>
 
                       <label class="tail-inspector-range-row" id="propTailEndWLabel" for="propTailEndW" hidden>
-                        <span data-i18n="docker.targetWidth">Target W</span>
+                        <span data-i18n="docker.targetWidth">Target width</span>
                         <input id="propTailEndWRange" class="tail-inspector-slider" type="range" min="5" max="300" step="1" value="40" aria-label="Connector Tail target base width slider" data-i18n-aria-label="docker.tailTargetWidthSlider" />
                         <span class="tail-inspector-stepper-field">
                           <input type="number" id="propTailEndW" min="5" max="300" value="40" />
@@ -2981,7 +2993,7 @@
 
                       <option value="solid" data-i18n="stroke.solid">Solid</option>
 
-                      <option value="broken" data-i18n="stroke.broken">Broken outline</option>
+                      <option value="broken" data-i18n="stroke.broken">Dashed outline</option>
 
                     </select>
 
@@ -4854,6 +4866,8 @@
 
   <script src="src/fonts/compatibility.js"></script>
 
+  <script src="src/fonts/local-fonts/families.js"></script>
+
   <script src="src/fonts/local-fonts/bootstrap.js"></script>
 
   <script src="src/utils/uid.js"></script>
@@ -4898,9 +4912,20 @@
 
   <script src="src/i18n/locales/id.js"></script>
 
+  <script src="src/i18n/locales/de.js"></script>
+
+  <script src="src/i18n/locales/fr.js"></script>
+
+  <script src="src/i18n/locales/ru.js"></script>
+
+  <script src="src/i18n/locales/uk.js"></script>
   <script src="src/i18n/index.js"></script>
 
   <script src="src/ui/themes.js"></script>
+
+  <script src="src/ui/dock-layouts.js"></script>
+
+  <script src="src/ui/dock-controller.js"></script>
 
   <script src="src/ui/startup.js"></script>
 

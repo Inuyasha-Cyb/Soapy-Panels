@@ -1,5 +1,6 @@
 const path = require("path");
 const crypto = require("crypto");
+const fs = require("fs");
 
 const EXPORT_MIME_EXTENSIONS = Object.freeze({
   "image/png": ["png"],
@@ -12,6 +13,39 @@ function normalizeExtension(value) {
   if (typeof value !== "string") return "";
   const clean = value.trim().replace(/^\.+/, "").toLowerCase();
   return /^[a-z0-9]{1,12}$/.test(clean) ? clean : "";
+}
+
+let lastGeneratedExportTimestamp = -1;
+let generatedExportSequence = 0;
+
+function formatTimestampedExportName(extension, timestamp, sequence) {
+  const date = new Date(timestamp);
+  const pad = (value, width) => String(value).padStart(width, "0");
+  const suffix = sequence > 0 ? `-${sequence}` : "";
+  return `bubbles-${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1, 2)}${pad(
+    date.getUTCDate(),
+    2,
+  )}-${pad(date.getUTCHours(), 2)}${pad(date.getUTCMinutes(), 2)}${pad(
+    date.getUTCSeconds(),
+    2,
+  )}-${pad(date.getUTCMilliseconds(), 3)}${suffix}.${extension}`;
+}
+
+function createTimestampedExportName(extension, timestamp = Date.now()) {
+  const normalizedExtension = normalizeExtension(extension) || "png";
+  const numericTimestamp = Number(timestamp);
+  const safeTimestamp = Number.isFinite(numericTimestamp) ? numericTimestamp : Date.now();
+  if (safeTimestamp === lastGeneratedExportTimestamp) {
+    generatedExportSequence += 1;
+  } else {
+    lastGeneratedExportTimestamp = safeTimestamp;
+    generatedExportSequence = 0;
+  }
+  return formatTimestampedExportName(
+    normalizedExtension,
+    safeTimestamp,
+    generatedExportSequence,
+  );
 }
 
 function normalizeExportSaveOptions(options) {
@@ -30,9 +64,9 @@ function normalizeExportSaveOptions(options) {
   const primaryExtension = finalExtensions[0];
 
   let suggestedName = typeof source.suggestedName === "string" ? source.suggestedName.trim() : "";
-  suggestedName = suggestedName ? path.basename(suggestedName) : `bubbles.${primaryExtension}`;
+  suggestedName = suggestedName ? path.basename(suggestedName) : "";
   if (!suggestedName || suggestedName === "." || suggestedName === "..") {
-    suggestedName = `bubbles.${primaryExtension}`;
+    suggestedName = createTimestampedExportName(primaryExtension);
   }
   const currentExt = normalizeExtension(path.extname(suggestedName));
   if (!finalExtensions.includes(currentExt)) {
@@ -66,6 +100,33 @@ function ensureExportPathExtension(filePath, extensions) {
   return `${filePath.replace(/\.+$/, "")}.${allowed[0]}`;
 }
 
+function isDefaultExportPath(filePath, suggestedName) {
+  return (
+    typeof filePath === "string" &&
+    typeof suggestedName === "string" &&
+    path.basename(filePath).toLowerCase() === path.basename(suggestedName).toLowerCase()
+  );
+}
+
+function nextAvailableExportPath(filePath, fileSystem = fs) {
+  if (typeof filePath !== "string" || !filePath) {
+    throw new Error("Export target path is required.");
+  }
+  const exists = (candidate) => fileSystem.existsSync(candidate);
+  if (!exists(filePath)) return filePath;
+
+  const parsed = path.parse(filePath);
+  const numbered = /^(.*?)(\d+)$/.exec(parsed.name);
+  const baseName = numbered ? numbered[1] : parsed.name;
+  let number = numbered ? Number(numbered[2]) + 1 : 1;
+  let candidate = path.join(parsed.dir, `${baseName}${number}${parsed.ext}`);
+  while (exists(candidate)) {
+    number += 1;
+    candidate = path.join(parsed.dir, `${baseName}${number}${parsed.ext}`);
+  }
+  return candidate;
+}
+
 function createExportSaveTargetRegistry() {
   const targets = new Map();
 
@@ -75,13 +136,14 @@ function createExportSaveTargetRegistry() {
   }
 
   return {
-    add(filePath, webContentsId) {
+    add(filePath, webContentsId, options = {}) {
       if (typeof filePath !== "string" || !filePath) {
         throw new Error("Export target path is required.");
       }
       const targetId = createId();
       targets.set(targetId, {
         filePath,
+        automatic: options.automatic === true,
         webContentsId: Number.isInteger(webContentsId) ? webContentsId : null,
       });
       return {
@@ -123,7 +185,10 @@ function createExportSaveTargetRegistry() {
 
 module.exports = {
   EXPORT_MIME_EXTENSIONS,
+  createTimestampedExportName,
   ensureExportPathExtension,
+  isDefaultExportPath,
+  nextAvailableExportPath,
   normalizeExportSaveOptions,
   createExportSaveTargetRegistry,
 };

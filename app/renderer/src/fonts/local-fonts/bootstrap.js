@@ -3,6 +3,12 @@
 (function bootstrapLocalFonts() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
+  function getFontFamilyApi() {
+    return window.SoapyPanels && window.SoapyPanels.fonts
+      ? window.SoapyPanels.fonts.families || null
+      : null;
+  }
+
   function resolveRequire() {
     if (typeof require === 'function') return require;
     if (typeof window.require === 'function') return window.require;
@@ -183,10 +189,10 @@
   }
 
   function defaultCreateFontFaceCss(font) {
-    const familyName = font.family || 'Local Font';
-    const escapedFamily = familyName
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"');
+    const familyNames = [font.family || 'Local Font'];
+    if (font.legacyFamily && font.legacyFamily !== familyNames[0]) {
+      familyNames.push(font.legacyFamily);
+    }
     let sources = [];
     if (Array.isArray(font.sources) && font.sources.length) {
       sources = font.sources;
@@ -225,15 +231,22 @@
         })
         .join(', ') || 'local("")';
 
-    return (
-      `@font-face {` +
-      ` font-family: "${escapedFamily}";` +
-      ` src: ${src};` +
-      ` font-display: swap;` +
-      ` font-style: ${font.style || 'normal'};` +
-      ` font-weight: ${font.weight || '400'};` +
-      ` }`
-    );
+    return familyNames
+      .map(function (familyName) {
+        const escapedFamily = familyName
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"');
+        return (
+          `@font-face {` +
+          ` font-family: "${escapedFamily}";` +
+          ` src: ${src};` +
+          ` font-display: swap;` +
+          ` font-style: ${font.style || 'normal'};` +
+          ` font-weight: ${font.weight || '400'};` +
+          ` }`
+        );
+      })
+      .join('\n');
   }
 
   function preloadFonts(fonts) {
@@ -333,6 +346,29 @@
         fontCoverageById.set(font.id, font.coverageRanges);
       });
     }
+    const pickerFonts = Array.isArray(window.localFontPickerFonts)
+      ? window.localFontPickerFonts
+      : [];
+    const facesById = new Map();
+    (Array.isArray(window.localFonts) ? window.localFonts : []).forEach(
+      function (font) {
+        if (font && font.id) facesById.set(font.id, font);
+      },
+    );
+    const familyApi = getFontFamilyApi();
+    pickerFonts.forEach(function (font) {
+      if (!font || !font.id || !familyApi) return;
+      const faceCandidates = (font.coverageFaceIds || [font.id].concat(font.legacyIds || []))
+        .map(function (id) {
+          return facesById.get(id);
+        })
+        .filter(Boolean);
+      const ranges = familyApi.unionCoverageRanges(faceCandidates);
+      if (ranges) {
+        font.coverageRanges = ranges;
+        fontCoverageById.set(font.id, ranges);
+      }
+    });
     fontPickerOptionDataCache = null;
     return true;
   }
@@ -1105,6 +1141,23 @@
     }
   }
 
+  function canonicalizeFontValue(fontValue, baseFamily) {
+    const familyApi = getFontFamilyApi();
+    if (!familyApi) return fontValue;
+    const localFonts = Array.isArray(window.localFonts) ? window.localFonts : [];
+    let canonicalFamily = baseFamily;
+    if (typeof familyApi.resolveCanonicalFamily === 'function') {
+      canonicalFamily = familyApi.resolveCanonicalFamily(canonicalFamily, localFonts);
+    }
+    if (!canonicalFamily && typeof fontValue === 'string') {
+      const primary = fontValue.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+      canonicalFamily = familyApi.resolveCanonicalFamily(primary, localFonts);
+    }
+    return canonicalFamily
+      ? familyApi.replacePrimaryFamily(fontValue, canonicalFamily)
+      : fontValue;
+  }
+
   function initFontPicker(select) {
     const elements = getFontPickerElements();
     if (!elements || !select) return;
@@ -1281,6 +1334,11 @@
     }
 
     fontCoverageById = new Map();
+    const familyApi = getFontFamilyApi();
+    const favorites = familyApi
+      ? familyApi.migrateFavoriteIds(getFavoriteSet(), fonts)
+      : getFavoriteSet();
+    persistFavoriteSet(favorites);
     fonts.forEach(function (font) {
       const value = composeFontValue(font.family, font.fallback);
       const option = document.createElement('option');
@@ -1291,6 +1349,21 @@
       if (font.style) option.dataset.fontStyle = font.style;
       if (font.baseFamily) option.dataset.fontBaseFamily = font.baseFamily;
       if (font.descriptor) option.dataset.fontDescriptor = font.descriptor;
+      if (font.groupId) option.dataset.fontGroupId = font.groupId;
+      if (Array.isArray(font.weightOptions)) {
+        option.dataset.fontWeights = JSON.stringify(font.weightOptions);
+      }
+      if (font.defaultWeight) option.dataset.fontDefaultWeight = font.defaultWeight;
+      if (font.regularWeight) option.dataset.fontRegularWeight = font.regularWeight;
+      if (font.nearestBoldWeight) {
+        option.dataset.fontNearestBoldWeight = font.nearestBoldWeight;
+      }
+      if (Array.isArray(font.faceVariants)) {
+        option.dataset.fontFaceVariants = JSON.stringify(font.faceVariants);
+      }
+      if (Array.isArray(font.legacyIds) && font.legacyIds.length) {
+        option.dataset.fontLegacyIds = font.legacyIds.join('|');
+      }
       if (Array.isArray(font.coverageRanges) && font.coverageRanges.length) {
         fontCoverageById.set(font.id, font.coverageRanges);
       }
@@ -1440,11 +1513,17 @@
       return;
     }
     try {
-      const fonts = assembleFonts();
-      insertFontFaces(fonts, createFontFaceCss);
-      populateFontDropdown(fonts);
-      schedulePreload(fonts);
-      window.localFonts = fonts;
+      const rawFonts = assembleFonts();
+      const familyApi = getFontFamilyApi();
+      const faces = familyApi ? familyApi.canonicalizeFaces(rawFonts) : rawFonts;
+      const pickerFonts = familyApi
+        ? familyApi.buildPickerEntries(faces)
+        : faces;
+      insertFontFaces(faces, createFontFaceCss);
+      populateFontDropdown(pickerFonts);
+      schedulePreload(faces);
+      window.localFonts = faces;
+      window.localFontPickerFonts = pickerFonts;
       applyLoadedFontCoverage();
       fontApplyPending = false;
     } catch (error) {
@@ -1455,6 +1534,7 @@
   window.SoapyPanels = window.SoapyPanels || {};
   window.SoapyPanels.fonts = window.SoapyPanels.fonts || {};
   window.SoapyPanels.fonts.syncFontPickerFromSelect = syncFontPickerFromSelect;
+  window.SoapyPanels.fonts.canonicalizeFontValue = canonicalizeFontValue;
   window.SoapyPanels.fonts.ensureCoverageLoaded = ensureFontCoverageLoaded;
 
   if (

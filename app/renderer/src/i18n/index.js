@@ -77,9 +77,15 @@ window.SoapyPanels = window.SoapyPanels || {};
     });
   }
 
-  function resolvePlural(value, params) {
+  function resolvePlural(value, params, locale) {
     if (!value || typeof value !== "object") return value;
     var count = params && typeof params.count === "number" ? params.count : null;
+    if (count !== null && typeof Intl !== "undefined" && typeof Intl.PluralRules === "function") {
+      try {
+        var category = new Intl.PluralRules(locale || DEFAULT_LOCALE).select(count);
+        if (hasOwn(value, category)) return value[category];
+      } catch (_e) { }
+    }
     if (count === 1 && hasOwn(value, "one")) return value.one;
     if (hasOwn(value, "other")) return value.other;
     if (hasOwn(value, "one")) return value.one;
@@ -87,7 +93,7 @@ window.SoapyPanels = window.SoapyPanels || {};
   }
 
   function t(key, params) {
-    return interpolate(resolvePlural(lookupString(currentLocale, key), params), params);
+    return interpolate(resolvePlural(lookupString(currentLocale, key), params, currentLocale), params);
   }
 
   function setElementAttribute(el, attr, value) {
