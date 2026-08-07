@@ -17,6 +17,24 @@ build/
 preflight-logs/
 unpacked-icon-check/
 publisher-check-logs/
+
+# Local credentials and secrets
+.env
+.env.*
+!.env.example
+.git-credentials
+**/.git-credentials
+credentials/
+**/credentials/
+secrets/
+**/secrets/
+*.secret
+*.secrets
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
 docs/debugging/
 docs/decisions/
 docs/runbooks/
