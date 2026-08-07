@@ -54873,6 +54873,45 @@ window.SoapyPanels = window.SoapyPanels || {};
         return hits[bubbleSelectionCycle.index] || hits[0];
       }
 
+      function getSelectionFallbackHit(px, py) {
+        var bubbleHit = null;
+        var stickerHit = null;
+
+        if (state && Array.isArray(state.bubbles)) {
+          for (var bubbleIndex = state.bubbles.length - 1; bubbleIndex >= 0; bubbleIndex--) {
+            var candidate = state.bubbles[bubbleIndex];
+            if (!candidate || !isFinite(candidate.x) || !isFinite(candidate.y) || !isFinite(candidate.w) || !isFinite(candidate.h)) continue;
+            if (candidate.w <= 1 || candidate.h <= 1) continue;
+            if (!isPointerNearBubbleHitBounds(candidate, px, py, 24)) continue;
+            var result = evaluateObjectHit(candidate, px, py);
+            if (result && result.b && result.part === "move") {
+              bubbleHit = result;
+              break;
+            }
+          }
+        }
+
+        if (!stickerHit && state && state.bg && Array.isArray(state.bg.images)) {
+          for (var stickerIndex = state.bg.images.length - 1; stickerIndex >= 0; stickerIndex--) {
+            var entry = state.bg.images[stickerIndex];
+            if (!entry || !isStickerBackground(entry)) continue;
+            var bounds = getBackgroundImageBounds(entry);
+            if (!bounds) continue;
+            if (ptInRect(px, py, bounds.x, bounds.y, bounds.w, bounds.h)) {
+              stickerHit = { bgImage: entry, part: "bg-image" };
+              break;
+            }
+          }
+        }
+
+        return window.SoapyPanels && window.SoapyPanels.selectionHitTestUtils && typeof window.SoapyPanels.selectionHitTestUtils.resolveSelectionFallbackHit === "function"
+          ? window.SoapyPanels.selectionHitTestUtils.resolveSelectionFallbackHit(null, px, py, {
+            getBubbleHit: function () { return bubbleHit; },
+            getStickerHit: function () { return stickerHit; },
+          })
+          : bubbleHit || stickerHit || null;
+      }
+
       function hitTest(px, py) {
 
         if (!state) return null;
@@ -56920,6 +56959,9 @@ window.SoapyPanels = window.SoapyPanels || {};
         if (!hit) {
           if (!e.altKey) resetBubbleSelectionCycle();
           hit = hitTest(p.x, p.y);
+          if (!hit) {
+            hit = getSelectionFallbackHit(p.x, p.y);
+          }
         }
 
         if (beginBackgroundInteractionFromHit(e, p, hit)) return;

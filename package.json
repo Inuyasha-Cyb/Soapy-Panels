@@ -4,7 +4,11 @@
   "description": "Speech-bubble maker and editor",
   "main": "app/main/index.js",
   "soapyEdition": "windows-store",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
+    "check:node": "node tools/checks/check-node.js",
     "start": "electron .",
     "start:community": "node tools/development/start-with-edition.js linux-community",
     "start:plus": "node tools/development/start-with-entitlement.js monthly",
@@ -21,8 +25,8 @@
     "dist": "npm run dist:windows",
     "pack:windows": "npm run licenses:build && npm run store-bridge:build && npm run store-launcher:build && electron-builder --config packaging/electron-builder.json --win --dir",
     "dist:windows": "npm run licenses:build && npm run store-bridge:build && npm run store-launcher:build && npm run msix:assets && electron-builder --config packaging/electron-builder.json --win",
-    "pack:linux": "npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux --dir",
-    "dist:linux": "npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux",
+    "pack:linux": "npm run check:node && npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux --dir",
+    "dist:linux": "npm run check:node && npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux",
     "make:msix": "npm run licenses:build && npm run store-bridge:build && npm run store-launcher:build && npm run msix:assets && electron-builder --config packaging/electron-builder.json --win appx",
     "make:msixupload": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/packaging/make-msixupload.ps1",
     "store:clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force out\\make -ErrorAction SilentlyContinue\"",
