@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+expected_login='Inuyasha-Cyb'
+expected_remote='https://github.com/Inuyasha-Cyb/Soapy-Panels.git'
+
+if [[ "$(git config --bool --local identity.allow-other 2>/dev/null || printf false)" == true ]]; then
+  exit 0
+fi
+
+name="$(git config --get user.name || true)"
+[[ "$name" == "$expected_login" ]] || {
+  printf 'Push blocked: Git user.name must be %s.\n' "$expected_login" >&2
+  exit 1
+}
+
+expected_email="$(git config --get identity.expected-email || true)"
+if [[ -n "$expected_email" ]]; then
+  email="$(git config --get user.email || true)"
+  [[ "$email" == "$expected_email" ]] || {
+    printf 'Push blocked: Git user.email must be %s.\n' "$expected_email" >&2
+    exit 1
+  }
+fi
+
+remote="$(git remote get-url origin 2>/dev/null || true)"
+[[ "$remote" == "$expected_remote" ]] || {
+  printf 'Push blocked: origin must be %s.\n' "$expected_remote" >&2
+  exit 1
+}
+
+gh_bin="$(command -v gh || true)"
+if [[ -z "$gh_bin" && -x /home/inuyasha/.local/bin/gh ]]; then
+  gh_bin=/home/inuyasha/.local/bin/gh
+fi
+[[ -n "$gh_bin" ]] || {
+  printf 'Push blocked: install and authenticate GitHub CLI first.\n' >&2
+  exit 1
+}
+
+login="$($gh_bin api user --jq .login 2>/dev/null || true)"
+[[ "$login" == "$expected_login" ]] || {
+  printf 'Push blocked: GitHub account must be %s, found %s.\n' "$expected_login" "${login:-unauthenticated}" >&2
+  exit 1
+}
