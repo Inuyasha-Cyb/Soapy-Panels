@@ -61,6 +61,12 @@ jobs:
           "$appimage_path" --appimage-version
 
           appimage_name="$(basename "$appimage_path")"
+          release_appimage_name="${appimage_name// /.}"
+          release_appimage_path="dist/linux/${release_appimage_name}"
+          mv "$appimage_path" "$release_appimage_path"
+
+          appimage_path="$release_appimage_path"
+          appimage_name="$release_appimage_name"
           checksum_path="dist/linux/${appimage_name}.sha256"
           (
             cd dist/linux
