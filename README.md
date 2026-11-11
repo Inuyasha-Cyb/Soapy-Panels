@@ -5,7 +5,7 @@ Soapy Panels is an Electron editor for speech bubbles and dialogue overlays.
 ## Getting started
 
 ```sh
-npm install
+npm ci
 npm start
 ```
 
@@ -14,7 +14,14 @@ npm start
 - `npm start` launches the app.
 - `npm run stickers:build` regenerates the bundled sticker manifest.
 - `npm run licenses:build` regenerates third-party notices.
-- `npm run pack:linux` builds the Linux Community edition.
+- `npm run pack:linux` builds the unpacked Linux Community edition.
+- `npm run dist:linux` builds the x64 AppImage and its SHA-256 checksum without publishing.
+- `npm run check:artifact:linux` verifies the current AppImage and checksum.
+- `npm run smoke:linux -- appimage` tests the packaged AppImage in an isolated profile.
+
+For downloads, installation, FUSE troubleshooting, and release validation, see
+[the Linux AppImage guide](LINUX_APPIMAGE_SMOKE_TEST.md). Developers need Node 22
+(at least 22.12.0); AppImage users do not need Node.js or npm.
 
 ## Source layout
 

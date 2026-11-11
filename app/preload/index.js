@@ -3,6 +3,17 @@ const { contextBridge, ipcRenderer } = require("electron");
 // Sandboxed preloads cannot import local CommonJS modules. Keep this literal map
 // synchronized with app/shared/ipc-channels.js; check:structure enforces parity.
 const IPC_CHANNELS = Object.freeze({
+  RECOVERY_START: "soapy:recoveryStart",
+  RECOVERY_LIST: "soapy:recoveryList",
+  RECOVERY_CLAIM: "soapy:recoveryClaim",
+  RECOVERY_READ: "soapy:recoveryRead",
+  RECOVERY_WRITE: "soapy:recoveryWrite",
+  RECOVERY_CLEAR: "soapy:recoveryClear",
+  RECOVERY_DISCARD: "soapy:recoveryDiscard",
+  RECOVERY_RELEASE: "soapy:recoveryRelease",
+  REQUEST_PROJECT_CLOSE: "soapy:requestProjectClose",
+  PROJECT_CLOSE_RESULT: "soapy:projectCloseResult",
+
   GET_STICKERS: "soapy:getStickers",
   STICKERS_CHANGED: "soapy:stickersChanged",
   GET_USER_FONTS: "soapy:getUserFonts",
@@ -35,7 +46,41 @@ const IPC_CHANNELS = Object.freeze({
   PROJECT_HISTORY_COMMAND: "soapy:projectHistoryCommand",
 });
 
+// Preserve native close requests received while renderer scripts are loading.
+let closeHandler = null;
+let closeRequested = false;
+ipcRenderer.on(IPC_CHANNELS.REQUEST_PROJECT_CLOSE, () => {
+  if (closeHandler) closeHandler();
+  else closeRequested = true;
+});
+async function invokeRecovery(channel, ...args) {
+  const result = await ipcRenderer.invoke(channel, ...args);
+  if (!result || result.ok !== true) {
+    const details = result && result.error;
+    const error = new Error(details && details.message || "Recovery unavailable");
+    error.code = details && details.code || "RECOVERY_IO";
+    // Electron contextBridge may omit custom Error properties on rejected promises.
+    // Preserve a stable marker as well; renderer recovery code extracts it if needed.
+    error.message = "[" + error.code + "] " + error.message;
+    throw error;
+  }
+  return result.value;
+}
 contextBridge.exposeInMainWorld("electronApi", {
+  recoveryStart: () => invokeRecovery(IPC_CHANNELS.RECOVERY_START),
+  recoveryList: query => invokeRecovery(IPC_CHANNELS.RECOVERY_LIST, query),
+  recoveryClaim: id => invokeRecovery(IPC_CHANNELS.RECOVERY_CLAIM, id),
+  recoveryRead: id => invokeRecovery(IPC_CHANNELS.RECOVERY_READ, id),
+  recoveryWrite: (id, value) => invokeRecovery(IPC_CHANNELS.RECOVERY_WRITE, id, value),
+  recoveryClear: (id, value) => invokeRecovery(IPC_CHANNELS.RECOVERY_CLEAR, id, value),
+  recoveryDiscard: id => invokeRecovery(IPC_CHANNELS.RECOVERY_DISCARD, id),
+  recoveryRelease: id => invokeRecovery(IPC_CHANNELS.RECOVERY_RELEASE, id),
+  onProjectCloseRequested: cb => {
+    if (typeof cb !== "function") return;
+    closeHandler = cb;
+    if (closeRequested) { closeRequested = false; cb(); }
+  },
+  projectCloseResult: approved => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_CLOSE_RESULT, approved === true),
   getUserFonts: () => {
     try {
       return ipcRenderer.sendSync(IPC_CHANNELS.GET_USER_FONTS) || [];

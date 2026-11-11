@@ -20,14 +20,21 @@
       "to": "legal/OPEN_SOURCE_NOTICES.txt"
     }
   ],
+  "extraFiles": [
+    { "from": "packaging/linux/AppRun", "to": "AppRun" }
+  ],
+  "appImage": {
+    "executableArgs": []
+  },
   "directories": {
     "output": "dist/linux",
     "buildResources": "out/packaging"
   },
   "linux": {
     "target": [
-      "AppImage"
+      { "target": "AppImage", "arch": ["x64"] }
     ],
+    "artifactName": "Soapy.Panels-${version}-x64.${ext}",
     "icon": "packaging/assets/icons/icon.png",
     "category": "Graphics"
   }

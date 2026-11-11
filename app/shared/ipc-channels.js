@@ -1,4 +1,15 @@
 const IPC_CHANNELS = Object.freeze({
+  RECOVERY_START: "soapy:recoveryStart",
+  RECOVERY_LIST: "soapy:recoveryList",
+  RECOVERY_CLAIM: "soapy:recoveryClaim",
+  RECOVERY_READ: "soapy:recoveryRead",
+  RECOVERY_WRITE: "soapy:recoveryWrite",
+  RECOVERY_CLEAR: "soapy:recoveryClear",
+  RECOVERY_DISCARD: "soapy:recoveryDiscard",
+  RECOVERY_RELEASE: "soapy:recoveryRelease",
+  REQUEST_PROJECT_CLOSE: "soapy:requestProjectClose",
+  PROJECT_CLOSE_RESULT: "soapy:projectCloseResult",
+
   GET_STICKERS: "soapy:getStickers",
   STICKERS_CHANGED: "soapy:stickersChanged",
   GET_USER_FONTS: "soapy:getUserFonts",

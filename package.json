@@ -9,7 +9,7 @@
   },
   "scripts": {
     "check:node": "node tools/checks/check-node.js",
-    "start": "electron .",
+    "start": "node tools/development/start-electron.js",
     "start:community": "node tools/development/start-with-edition.js linux-community",
     "start:plus": "node tools/development/start-with-entitlement.js monthly",
     "start:permanent": "node tools/development/start-with-entitlement.js permanent",
@@ -25,8 +25,8 @@
     "dist": "npm run dist:windows",
     "pack:windows": "npm run licenses:build && npm run store-bridge:build && npm run store-launcher:build && electron-builder --config packaging/electron-builder.json --win --dir",
     "dist:windows": "npm run licenses:build && npm run store-bridge:build && npm run store-launcher:build && npm run msix:assets && electron-builder --config packaging/electron-builder.json --win",
-    "pack:linux": "npm run check:node && npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux --dir",
-    "dist:linux": "npm run check:node && npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux",
+    "pack:linux": "npm run check:node && npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux --dir --x64 --publish never",
+    "dist:linux": "npm run check:node && npm run licenses:build && electron-builder --config packaging/electron-builder.linux.json --linux --x64 --publish never && npm run checksum:linux",
     "make:msix": "npm run licenses:build && npm run store-bridge:build && npm run store-launcher:build && npm run msix:assets && electron-builder --config packaging/electron-builder.json --win appx",
     "make:msixupload": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/packaging/make-msixupload.ps1",
     "store:clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force out\\make -ErrorAction SilentlyContinue\"",
@@ -60,7 +60,11 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "fonts:coverage:build": "node tools/fonts/generate-font-coverage.js",
-    "stickers:build": "node tools/stickers/generate-sticker-manifest.js"
+    "stickers:build": "node tools/stickers/generate-sticker-manifest.js",
+    "checksum:linux": "node tools/checks/check-linux-artifact.js --write",
+    "check:artifact:linux": "node tools/checks/check-linux-artifact.js",
+    "smoke:linux": "node tools/testing/smoke-linux.js",
+    "lint:release": "eslint tools/checks/check-linux-artifact.js tools/packaging/linux-artifact.js tools/testing/smoke-linux.js test/unit/linux-artifact.test.js"
   },
   "keywords": [],
   "author": "Soapy Panels",
@@ -68,7 +72,7 @@
   "type": "commonjs",
   "devDependencies": {
     "@eslint/js": "^9.36.0",
-    "electron": "43.1.1",
+    "electron": "43.8.4",
     "electron-builder": "26.15.3",
     "eslint": "^9.39.1",
     "globals": "^16.3.0",

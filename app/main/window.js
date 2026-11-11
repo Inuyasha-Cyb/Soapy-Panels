@@ -34,6 +34,38 @@ function createWindow(options = {}) {
     },
   });
   trustedRendererRegistry.registerWindow(win);
+  let closeApproved = false;
+  let closePromise = null;
+  let resolveClose = null;
+  win.requestProjectClose = () => {
+    if (closeApproved) return Promise.resolve(true);
+    if (win.webContents.isDestroyed() || win.webContents.isCrashed()) {
+      closeApproved = true;
+      win.close();
+      return Promise.resolve(true); // Keep recovery after renderer failure.
+    }
+    if (closePromise) return closePromise;
+    closePromise = new Promise(resolve => { resolveClose = resolve; });
+    win.webContents.send(IPC_CHANNELS.REQUEST_PROJECT_CLOSE);
+    return closePromise;
+  };
+  win.finishProjectClose = approved => {
+    const resolve = resolveClose;
+    resolveClose = null;
+    closePromise = null;
+    if (resolve) resolve(approved);
+    if (!approved) return;
+    closeApproved = true;
+    win.close();
+  };
+  win.on("close", event => {
+    if (closeApproved || win.webContents.isDestroyed() || win.webContents.isCrashed()) return;
+    event.preventDefault();
+    void win.requestProjectClose();
+  });
+  win.webContents.on("render-process-gone", () => {
+    if (resolveClose) { resolveClose(false); resolveClose = null; closePromise = null; }
+  });
   if (startupMetrics) startupMetrics.mark("windowCreated");
 
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));

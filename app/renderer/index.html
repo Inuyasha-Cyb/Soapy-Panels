@@ -76,6 +76,7 @@
 
               <div class="sep"></div>
 
+              <button class="mi" id="mi-recovery" data-i18n="recovery.manage" hidden>Manage recovery copies</button>
               <button class="mi" id="mi-save" data-i18n="menu.saveProject">Save Project</button><button class="mi"
                 id="mi-save-as" data-i18n="menu.saveProjectAs">Save Project As…</button><button class="mi"
                 id="mi-exp-png" data-i18n="menu.exportPng">Export as PNG</button><button class="mi" id="mi-exp-jpg"
@@ -145,6 +146,16 @@
               <button class="mi" id="mi-toggle-grid" type="button" aria-pressed="false" data-no-checkmark="true">
                 Show Grid
               </button>
+
+              <details class="alignment-menu" id="alignmentGuidesMenu">
+                <summary class="mi" data-i18n="alignment.menu">Alignment guides</summary>
+                <div role="menu" data-i18n-aria-label="alignment.menu" aria-label="Alignment guides">
+                  <button class="mi" type="button" role="menuitemradio" data-alignment-mode="off" aria-checked="false" data-i18n="alignment.off">Off</button>
+                  <button class="mi" type="button" role="menuitemradio" data-alignment-mode="guides" aria-checked="true" data-i18n="alignment.guides">Guides only</button>
+                  <button class="mi" type="button" role="menuitemradio" data-alignment-mode="snap" aria-checked="false" data-i18n="alignment.snap">Guides and snapping</button>
+                </div>
+                <p class="alignment-shortcut" data-i18n="alignment.shortcut">Hold Ctrl (Command on Mac) while dragging to move freely.</p>
+              </details>
 
               <div class="sep"></div>
 
@@ -377,6 +388,7 @@
             <canvas id="overlay" width="1280" height="720"></canvas>
 
             <div id="hitAnchors"></div>
+            <svg id="alignmentGuides" class="alignment-guides" aria-hidden="true" focusable="false"></svg>
 
           </div>
 
@@ -4166,6 +4178,18 @@
 
   <input type="file" id="fileImage" accept="image/*,video/mp4,.mp4" multiple hidden />
 
+  <div id="projectRecoveryStatus" class="project-recovery-status" role="status" aria-live="polite" hidden></div>
+  <div id="projectRecoveryControls" class="project-recovery-controls" hidden><button type="button" data-recovery-retry data-i18n="recovery.retry">Retry recovery</button><button type="button" data-recovery-manage data-i18n="recovery.manage">Manage recovery copies</button></div>
+  <dialog id="projectRecoveryDialog" class="project-recovery-dialog" aria-labelledby="projectRecoveryTitle" aria-describedby="projectRecoveryDescription">
+    <h2 id="projectRecoveryTitle" data-i18n="recovery.title">Recover unfinished work</h2>
+    <p id="projectRecoveryDescription" data-i18n="recovery.description">Choose a recovery copy to restore, or discard it.</p>
+    <p id="projectRecoveryUsage"></p>
+    <ul id="projectRecoveryList"></ul>
+    <p id="projectRecoveryError" role="alert"></p>
+    <button type="button" data-recovery-more data-i18n="recovery.more" hidden>More copies</button>
+    <button type="button" data-recovery-leave data-i18n="recovery.leave">Continue without deleting copies</button>
+  </dialog>
+
   <div id="projectSafetyOverlay" class="project-safety-overlay" role="presentation" aria-hidden="true" hidden>
     <div id="projectSafetyDialog" class="project-safety-dialog" role="alertdialog" aria-modal="true"
       aria-labelledby="projectSafetyTitle" aria-describedby="projectSafetyDescription" tabindex="-1">
@@ -4268,16 +4292,16 @@
 
   <div id="gradientOverlay" class="gradient-overlay" role="presentation" aria-hidden="true" hidden>
 
-    <div class="gradient-dialog" role="dialog" aria-modal="true" aria-labelledby="gradientDialogTitle" tabindex="-1">
+    <div class="gradient-dialog" role="dialog" aria-modal="true" aria-labelledby="gradientDialogTitle" aria-describedby="gradientDialogDescription" tabindex="-1">
 
-      <h2 id="gradientDialogTitle">
-
-        Gradient Fill
-
-        <button type="button" data-gradient-close aria-label="Close gradient editor">x</button>
-
-      </h2>
-
+      <div class="gradient-header">
+        <div>
+          <h2 id="gradientDialogTitle"><span data-gradient-title>Gradient Fill</span></h2>
+          <p id="gradientDialogDescription" data-i18n="gradient.description">Adjust the direction, colors and stops. Drag the preview handles to fine-tune.</p>
+        </div>
+        <button type="button" data-gradient-close data-i18n-aria-label="gradient.close" aria-label="Close gradient editor">×</button>
+      </div>
+      <div class="gradient-body">
       <div class="gradient-preview" data-gradient-preview>
 
         <canvas data-gradient-canvas width="320" height="220" aria-hidden="true"></canvas>
@@ -4286,31 +4310,19 @@
 
       <div class="gradient-controls">
 
-        <div class="gradient-mode" role="radiogroup" aria-label="Gradient type">
+        <div class="gradient-mode" role="radiogroup" data-i18n-aria-label="gradient.type" aria-label="Gradient type">
 
-          <button type="button" class="selected" data-gradient-mode="linear" role="radio" aria-checked="true">
+          <button type="button" class="selected" data-gradient-mode="linear" role="radio" aria-checked="true"><span aria-hidden="true">↗</span><span data-i18n="gradient.linear">Linear</span></button>
 
-            Linear
+          <button type="button" data-gradient-mode="radial" role="radio" aria-checked="false"><span aria-hidden="true">◎</span><span data-i18n="gradient.radial">Radial</span></button>
 
-          </button>
-
-          <button type="button" data-gradient-mode="radial" role="radio" aria-checked="false">
-
-            Radial
-
-          </button>
-
-          <button type="button" data-gradient-mode="double" role="radio" aria-checked="false">
-
-            Double Outline
-
-          </button>
+          <button type="button" data-gradient-mode="double" role="radio" aria-checked="false"><span aria-hidden="true">▣</span><span data-i18n="gradient.double">Double Outline</span></button>
 
         </div>
 
         <div class="gradient-angle" data-gradient-angle>
 
-          <label for="gradientAngle">Angle (degrees)</label>
+          <label for="gradientAngle"><span data-i18n="gradient.angle">Angle (degrees)</span></label>
 
           <input type="number" id="gradientAngle" min="0" max="360" step="1" value="0" />
 
@@ -4322,7 +4334,7 @@
 
             <label for="gradientCenterX">
 
-              Center X (%)
+              <span data-i18n="gradient.centerX">Center X (%)</span>
 
               <input type="number" id="gradientCenterX" min="0" max="100" step="1" value="50" />
 
@@ -4330,7 +4342,7 @@
 
             <label for="gradientCenterY">
 
-              Center Y (%)
+              <span data-i18n="gradient.centerY">Center Y (%)</span>
 
               <input type="number" id="gradientCenterY" min="0" max="100" step="1" value="50" />
 
@@ -4340,7 +4352,7 @@
 
           <label for="gradientRadius">
 
-            Radius (% of bubble size)
+            <span data-i18n="gradient.radius">Radius (% of bubble size)</span>
 
             <input type="number" id="gradientRadius" min="1" max="200" step="1" value="100" />
 
@@ -4354,7 +4366,7 @@
 
             <label for="gradientDoubleInner">
 
-              Inner Color
+              <span data-i18n="gradient.inner">Inner Color</span>
 
               <input type="color" id="gradientDoubleInner" value="#ffffff" />
 
@@ -4362,7 +4374,7 @@
 
             <label for="gradientDoubleOuter">
 
-              Outer Color
+              <span data-i18n="gradient.outer">Outer Color</span>
 
               <input type="color" id="gradientDoubleOuter" value="#000000" />
 
@@ -4374,7 +4386,7 @@
 
             <label for="gradientDoubleSplit">
 
-              Inner Thickness (%)
+              <span data-i18n="gradient.thickness">Inner Thickness (%)</span>
 
               <input type="number" id="gradientDoubleSplit" min="1" max="99" value="50" />
 
@@ -4382,7 +4394,7 @@
 
             <div class="double-outline-split-summary">
 
-              Outer: <span id="gradientDoubleSplitOuter">50%</span>
+              <span data-i18n="gradient.outerShare">Outer:</span> <span id="gradientDoubleSplitOuter">50%</span>
 
             </div>
 
@@ -4390,21 +4402,26 @@
 
         </div>
 
-        <div class="gradient-stops" data-gradient-stops></div>
+        <section class="gradient-stop-section" data-gradient-stop-section aria-labelledby="gradientStopsTitle">
+          <h3 id="gradientStopsTitle" data-i18n="gradient.stops">Gradient Stops</h3>
+          <div class="gradient-stops" data-gradient-stops></div>
 
-        <button type="button" data-gradient-add-stop>Add Color Stop</button>
+        <button type="button" data-gradient-add-stop data-i18n="gradient.add">Add Color Stop</button>
+          <p class="gradient-limit" data-gradient-limit data-i18n="gradient.limit" hidden>Maximum of 5 color stops.</p>
+        </section>
 
       </div>
 
+      </div>
       <div class="gradient-dialog-footer">
 
-        <button type="button" class="danger" data-gradient-clear>Remove Gradient</button>
+        <button type="button" class="danger" data-gradient-clear data-i18n="gradient.remove">Remove Gradient</button>
 
         <span class="spacer"></span>
 
-        <button type="button" data-gradient-cancel>Cancel</button>
+        <button type="button" data-gradient-cancel data-i18n="gradient.cancel">Cancel</button>
 
-        <button type="button" class="primary" data-gradient-apply>Apply Gradient</button>
+        <button type="button" class="primary" data-gradient-apply data-i18n="gradient.apply">Apply Gradient</button>
 
       </div>
 
@@ -4875,6 +4892,7 @@
   <script src="src/images/effects.js"></script>
 
   <script src="src/images/effects-runtime.js"></script>
+  <script src="src/images/preview-scheduler.js"></script>
 
   <script src="src/project/serialization.js"></script>
 
@@ -4894,11 +4912,14 @@
 
   <script src="src/selection-hit-test-utils.js"></script>
 
+  <script src="src/color-sampler-utils.js"></script>
+
   <script src="src/tails/outline.js"></script>
 
   <script src="src/tails/curve.js"></script>
 
   <script src="src/media/mediabunny-loader.js"></script>
+  <script src="src/media/gif-resource-policy.js"></script>
   <script src="src/media/gif.js"></script>
   <script src="src/media/video.js"></script>
   <script src="src/media/mp4-export.js"></script>
@@ -4931,6 +4952,15 @@
 
   <script src="src/ui/startup.js"></script>
 
+  <script src="src/project/snapshots.js"></script>
+  <script src="src/project/document.js"></script>
+  <script src="src/project/safety.js"></script>
+  <script src="src/project/lifecycle.js"></script>
+  <script src="src/project/recovery.js"></script>
+  <script src="src/project/recovery-ui.js"></script>
+  <script src="src/selection/alignment-geometry.js"></script>
+  <script src="src/selection/alignment-controller.js"></script>
+  <script src="src/selection/alignment-overlay.js"></script>
   <script src="src/boot.js"></script>
 
   <script src="src/ui/tool-buttons.js"></script>

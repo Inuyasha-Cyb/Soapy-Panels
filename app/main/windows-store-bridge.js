@@ -15,30 +15,41 @@ const FRIENDLY_ERRORS = Object.freeze({
   requestFailed: "Microsoft Store could not complete the request. Please try again.",
 });
 
-function getCandidateHelperPaths(options = {}) {
-  const candidates = [];
-  const resourcesPath = options.resourcesPath === undefined
-    ? process.resourcesPath
-    : options.resourcesPath;
-  const currentDirectory = options.currentDirectory || process.cwd();
-  const mainDirectory = options.mainDirectory || __dirname;
-  if (resourcesPath) {
-    candidates.push(path.join(resourcesPath, "store-bridge", HELPER_EXE));
-  }
-  candidates.push(path.join(mainDirectory, "..", "..", "out", "store-bridge", HELPER_EXE));
-  candidates.push(path.join(currentDirectory, "out", "store-bridge", HELPER_EXE));
-  return candidates;
-}
-
 function resolveHelperPath(options = {}) {
   const fsImpl = options.fsImpl || fs;
-  return getCandidateHelperPaths(options).find((candidate) => {
-    try {
-      return fsImpl.existsSync(candidate);
-    } catch {
-      return false;
-    }
-  }) || "";
+  // Only explicit main-process development state permits a source-tree helper.
+  // Unknown state is treated as packaged; never derive this from the launch CWD.
+  let root = options.resourcesPath === undefined
+    ? process.resourcesPath
+    : options.resourcesPath;
+  if (options.isPackaged === false) {
+    const mainDirectory = options.mainDirectory === undefined ? __dirname : options.mainDirectory;
+    if (typeof mainDirectory !== "string" || !path.isAbsolute(mainDirectory)) return "";
+    root = path.join(mainDirectory, "..", "..", "out");
+  }
+  if (typeof root !== "string" || !path.isAbsolute(root)) return "";
+  try {
+    const directory = path.join(root, "store-bridge");
+    const helper = path.join(directory, HELPER_EXE);
+    const directoryStat = fsImpl.lstatSync(directory);
+    const helperStat = fsImpl.lstatSync(helper);
+    if (
+      !directoryStat.isDirectory() || directoryStat.isSymbolicLink() ||
+      !helperStat.isFile() || helperStat.isSymbolicLink()
+    ) return "";
+    const realRoot = fsImpl.realpathSync(root);
+    const realDirectory = fsImpl.realpathSync(directory);
+    const realHelper = fsImpl.realpathSync(helper);
+    // Compare path components, not string prefixes; Windows comparison is case-insensitive.
+    if (
+      !path.isAbsolute(realRoot) || !path.isAbsolute(realDirectory) || !path.isAbsolute(realHelper) ||
+      path.relative(path.join(realRoot, "store-bridge"), realDirectory) !== "" ||
+      path.relative(path.join(realDirectory, HELPER_EXE), realHelper) !== ""
+    ) return "";
+    return realHelper;
+  } catch {
+    return "";
+  }
 }
 
 function nativeWindowHandleToNumber(windowHandle) {
@@ -139,8 +150,13 @@ function createWindowsStoreBridge(options = {}) {
   }
 
   function runHelper(command, payload, timeoutMs) {
-    const helperPath = resolveHelperPathImpl();
-    if (!helperPath) {
+    let helperPath;
+    try {
+      helperPath = resolveHelperPathImpl();
+    } catch {
+      /* Unavailable storage must fail closed. */
+    }
+    if (typeof helperPath !== "string" || !path.isAbsolute(helperPath)) {
       return Promise.reject(createStoreBridgeError(FRIENDLY_ERRORS.helperMissing));
     }
 
@@ -182,6 +198,8 @@ function createWindowsStoreBridge(options = {}) {
           {
             timeout: timeoutMs,
             windowsHide: true,
+            shell: false,
+            cwd: path.dirname(helperPath),
           },
           onComplete,
         );

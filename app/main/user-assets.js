@@ -1,7 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-const { pathToFileURL } = require("url");
-const { getFontCoverageRanges } = require("../shared/font-coverage");
+const fs = require('fs');
+const path = require('path');
+const { pathToFileURL } = require('url');
+const gifPolicy = require('../renderer/src/media/gif-resource-policy');
+const { getFontCoverageRanges } = require('../shared/font-coverage');
 
 let fontkitLoadAttempted = false;
 let fontkitModule = null;
@@ -10,7 +11,7 @@ function getFontkit() {
   if (fontkitLoadAttempted) return fontkitModule;
   fontkitLoadAttempted = true;
   try {
-    fontkitModule = require("fontkit");
+    fontkitModule = require('fontkit');
   } catch {
     fontkitModule = null;
   }
@@ -18,70 +19,72 @@ function getFontkit() {
 }
 
 function normalizeFontDisplayName(value) {
-  const normalized = String(value || "")
-    .replace(/[_-]+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([0-9])([a-zA-Z])/g, "$1 $2")
-    .replace(/([a-zA-Z])([0-9])/g, "$1 $2")
-    .replace(/\s+/g, " ")
+  const normalized = String(value || '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([0-9])([a-zA-Z])/g, '$1 $2')
+    .replace(/([a-zA-Z])([0-9])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
     .trim();
-  return normalized || "User Font";
+  return normalized || 'User Font';
 }
 
 function guessFontWeight(displayName) {
-  const lower = String(displayName || "").toLowerCase();
+  const lower = String(displayName || '').toLowerCase();
   const numeric = lower.match(/\b([1-9]00)\b/);
   if (numeric) return numeric[1];
-  if (/\b(extra|ultra)[\s-]*bold\b/.test(lower)) return "800";
-  if (/\bblack\b/.test(lower)) return "900";
-  if (/\bbold\b/.test(lower)) return "700";
-  if (/\b(semi|demi)[\s-]*bold\b/.test(lower)) return "600";
-  if (/\bmedium\b/.test(lower)) return "500";
-  if (/\blight\b/.test(lower)) return "300";
-  if (/\bthin\b/.test(lower)) return "100";
-  return "400";
+  if (/\b(extra|ultra)[\s-]*bold\b/.test(lower)) return '800';
+  if (/\bblack\b/.test(lower)) return '900';
+  if (/\bbold\b/.test(lower)) return '700';
+  if (/\b(semi|demi)[\s-]*bold\b/.test(lower)) return '600';
+  if (/\bmedium\b/.test(lower)) return '500';
+  if (/\blight\b/.test(lower)) return '300';
+  if (/\bthin\b/.test(lower)) return '100';
+  return '400';
 }
 
 function guessFontStyle(displayName) {
-  return /\b(italic|oblique)\b/i.test(String(displayName || ""))
-    ? "italic"
-    : "normal";
+  return /\b(italic|oblique)\b/i.test(String(displayName || ''))
+    ? 'italic'
+    : 'normal';
 }
 
 function buildUserFontEntry(filePath, font, ext, href) {
   const baseName = path.basename(filePath, path.extname(filePath)).trim();
   const fallbackName = normalizeFontDisplayName(baseName);
   const family =
-    (font && font.familyName && String(font.familyName).trim()) ||
-    fallbackName;
+    (font && font.familyName && String(font.familyName).trim()) || fallbackName;
   const subfamily =
-    (font && font.subfamilyName && String(font.subfamilyName).trim()) || "";
+    (font && font.subfamilyName && String(font.subfamilyName).trim()) || '';
   const fullName =
     (font && font.fullName && String(font.fullName).trim()) ||
     (font && subfamily ? `${family} ${subfamily}` : fallbackName);
 
   const weightNum =
-    font && typeof font.weight === "number" && isFinite(font.weight)
+    font && typeof font.weight === 'number' && isFinite(font.weight)
       ? font.weight
       : null;
-  const weight = weightNum === null ? guessFontWeight(fullName) : String(Math.round(weightNum));
+  const weight =
+    weightNum === null
+      ? guessFontWeight(fullName)
+      : String(Math.round(weightNum));
   const italicAngle =
-    font && typeof font.italicAngle === "number" && isFinite(font.italicAngle)
+    font && typeof font.italicAngle === 'number' && isFinite(font.italicAngle)
       ? font.italicAngle
       : 0;
   const styleGuess =
     /italic|oblique/i.test(subfamily || fullName) || italicAngle !== 0;
-  const style = styleGuess ? "italic" : guessFontStyle(fullName);
+  const style = styleGuess ? 'italic' : guessFontStyle(fullName);
 
   const id = `user:${family}:${weight}:${style}`
-    .replace(/\s+/g, "-")
+    .replace(/\s+/g, '-')
     .toLowerCase();
 
   const entry = {
     id,
     family,
     label: fullName,
-    fallback: "sans-serif",
+    fallback: 'sans-serif',
     weight,
     style,
     href,
@@ -128,12 +131,39 @@ function watchFolder(folder, onChange) {
   }
 }
 
-function readGifDataUrl(filePath) {
+// Inspect the signature through a bounded file descriptor read, including GIFs
+// disguised with a still-image extension. Never fall back to native GIF decoding.
+function readStickerSource(filePath) {
+  let fd;
   try {
-    const bytes = fs.readFileSync(filePath);
-    return `data:image/gif;base64,${bytes.toString("base64")}`;
-  } catch {
-    return null;
+    fd = fs.openSync(filePath, 'r');
+    const header = Buffer.alloc(6);
+    fs.readSync(fd, header, 0, 6, 0);
+    const isGif = gifPolicy.candidate(header) || /\.gif$/i.test(filePath);
+    if (!isGif) return { src: pathToFileURL(filePath).toString() };
+    const size = gifPolicy.inputSize(fs.fstatSync(fd).size);
+    const bytes = Buffer.alloc(size);
+    let offset = 0;
+    while (offset < size) {
+      const count = fs.readSync(fd, bytes, offset, size - offset, offset);
+      if (!count) throw gifPolicy.error('GIF_UNREADABLE');
+      offset += count;
+    }
+    gifPolicy.inspect(bytes, { maxFrames: 1 });
+    return {
+      src: `data:image/gif;base64,${bytes.toString('base64')}`,
+      mediaKind: 'gif',
+      mimeType: 'image/gif',
+    };
+  } catch (error) {
+    return {
+      src: '',
+      mediaKind: 'gif',
+      mimeType: 'image/gif',
+      loadErrorCode: error.code || 'GIF_UNREADABLE',
+    };
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
   }
 }
 
@@ -147,29 +177,25 @@ function createUserAssetStore() {
 
   function readUserStickers() {
     if (!stickersDir) return [];
-    const files = walkFiles(stickersDir, new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]));
+    const files = walkFiles(
+      stickersDir,
+      new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']),
+    );
     return files.map((filePath) => {
       const ext = path.extname(filePath).toLowerCase();
       const base = path.basename(filePath, ext);
-      const id = `user:${base}`.replace(/\s+/g, "-").toLowerCase();
-      const isGif = ext === ".gif";
-      const gifDataUrl = isGif ? readGifDataUrl(filePath) : null;
-      const entry = {
-        id,
-        name: base,
-        src: gifDataUrl || pathToFileURL(filePath).toString(),
-      };
-      if (isGif) {
-        entry.mediaKind = "gif";
-        entry.mimeType = "image/gif";
-      }
+      const id = `user:${base}`.replace(/\s+/g, '-').toLowerCase();
+      const entry = { id, name: base, ...readStickerSource(filePath) };
       return entry;
     });
   }
 
   function readUserFonts() {
     if (!fontsDir) return [];
-    const files = walkFiles(fontsDir, new Set([".ttf", ".otf", ".woff", ".woff2"]));
+    const files = walkFiles(
+      fontsDir,
+      new Set(['.ttf', '.otf', '.woff', '.woff2']),
+    );
     const results = [];
 
     for (const filePath of files) {
@@ -178,7 +204,7 @@ function createUserAssetStore() {
       let opened = null;
       const fontkit = getFontkit();
 
-      if (fontkit && typeof fontkit.openSync === "function") {
+      if (fontkit && typeof fontkit.openSync === 'function') {
         try {
           opened = fontkit.openSync(filePath);
         } catch {
@@ -186,7 +212,8 @@ function createUserAssetStore() {
         }
       }
 
-      const fontList = opened && opened.fonts ? opened.fonts : opened ? [opened] : [];
+      const fontList =
+        opened && opened.fonts ? opened.fonts : opened ? [opened] : [];
 
       if (!fontList.length) {
         results.push(buildUserFontEntry(filePath, null, ext, href));
@@ -209,12 +236,15 @@ function createUserAssetStore() {
   }
 
   function loadUserFontsAsync(options = {}) {
-    if (!options.force && cachedUserFonts) return Promise.resolve(cachedUserFonts);
+    if (!options.force && cachedUserFonts)
+      return Promise.resolve(cachedUserFonts);
     if (userFontsLoadPromise) return userFontsLoadPromise;
 
     userFontsLoadPromise = new Promise((resolve) => {
       const schedule =
-        typeof setImmediate === "function" ? setImmediate : (callback) => setTimeout(callback, 0);
+        typeof setImmediate === 'function'
+          ? setImmediate
+          : (callback) => setTimeout(callback, 0);
       schedule(() => {
         try {
           resolve(readUserFonts());
@@ -231,18 +261,18 @@ function createUserAssetStore() {
   }
 
   function initialize(userDataDir, handlers = {}) {
-    stickersDir = path.join(userDataDir, "stickers");
-    fontsDir = path.join(userDataDir, "fonts");
+    stickersDir = path.join(userDataDir, 'stickers');
+    fontsDir = path.join(userDataDir, 'fonts');
     ensureDir(stickersDir);
     ensureDir(fontsDir);
 
     stickerWatcher = watchFolder(stickersDir, () => {
-      if (typeof handlers.onStickersChanged === "function") {
+      if (typeof handlers.onStickersChanged === 'function') {
         handlers.onStickersChanged(readUserStickers());
       }
     });
     fontWatcher = watchFolder(fontsDir, () => {
-      if (typeof handlers.onFontsChanged === "function") {
+      if (typeof handlers.onFontsChanged === 'function') {
         cachedUserFonts = null;
         loadUserFontsAsync({ force: true }).then((fonts) => {
           handlers.onFontsChanged(fonts);
@@ -267,9 +297,14 @@ function createUserAssetStore() {
   function importUserFontFolder(sourceFolder) {
     try {
       if (!fontsDir) {
-        return { ok: false, imported: 0, skipped: 0, error: "Store not initialized" };
+        return {
+          ok: false,
+          imported: 0,
+          skipped: 0,
+          error: 'Store not initialized',
+        };
       }
-      const fontExts = new Set([".ttf", ".otf", ".woff", ".woff2"]);
+      const fontExts = new Set(['.ttf', '.otf', '.woff', '.woff2']);
       const files = walkFiles(sourceFolder, fontExts);
       let imported = 0;
       let skipped = 0;
