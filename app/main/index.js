@@ -30,10 +30,21 @@ const startupMetrics = createStartupMetrics({
 startupMetrics.mark("mainEntry");
 
 registerProcessErrorLogging();
+
+if (!app || !protocol) {
+  const message =
+    "Soapy Panels must be launched by Electron. " +
+    "ELECTRON_RUN_AS_NODE is set or the Electron runtime is unavailable.";
+  logMain(`fatal startup ${message}`);
+  console.error(message);
+  process.exit(1);
+}
+
 registerAppProtocolPrivileges(protocol);
 const launchPolicy = configureProcessFlags(app);
 
 const assetStore = createUserAssetStore();
+let exportServices = null;
 
 function broadcast(channel, payload) {
   BrowserWindow.getAllWindows().forEach((win) => {
@@ -90,6 +101,8 @@ app.whenReady().then(() => {
     const { createMonetizationStore } = require("./monetization-store");
     monetizationStore = createMonetizationStore({
       userDataPath: app.getPath("userData"),
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
       developmentEntitlement,
     });
   }
@@ -99,7 +112,7 @@ app.whenReady().then(() => {
     logMain(`development entitlement simulation=${developmentEntitlement}`);
   }
 
-  registerIpcHandlers(assetStore, monetizationStore, {
+  exportServices = registerIpcHandlers(assetStore, monetizationStore, {
     appEdition,
     startupMetrics,
   });
@@ -115,6 +128,34 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", () => {
-  assetStore.close();
+let quitPending = false;
+let quitReady = false;
+app.on("before-quit", event => {
+  if (quitReady) return;
+  event.preventDefault();
+  if (quitPending) return;
+  quitPending = true;
+  const windows = BrowserWindow.getAllWindows();
+  Promise.all(windows.map(win => win.requestProjectClose()))
+    .then(async results => {
+      if (!results.every(Boolean)) return;
+      if (exportServices) {
+        let timeout;
+        try {
+          await Promise.race([
+            exportServices.dispose().catch(error => logMain(`Export shutdown cleanup deferred: ${error.code || "IO_ERROR"}`)),
+            new Promise(resolve => { timeout = setTimeout(() => {
+              exportServices.cancelHelpers();
+              logMain("Export shutdown cleanup exceeded five seconds; private leftovers will be retried at startup.");
+              resolve();
+            }, 5000); }),
+          ]);
+        } finally { clearTimeout(timeout); }
+      }
+      quitReady = true;
+      app.quit();
+    })
+    .catch(error => logMain(`Close coordination failed: ${error.code || "IO_ERROR"}`))
+    .finally(() => { quitPending = false; });
 });
+app.on("will-quit", () => { assetStore.close(); });

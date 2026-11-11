@@ -47,16 +47,19 @@ async function measureLaunch(options) {
   fs.rmSync(options.profileDir, { recursive: true, force: true });
   fs.mkdirSync(options.profileDir, { recursive: true });
 
+  const launchEnvironment = {
+    ...process.env,
+    SOAPY_LOG_MAIN: "0",
+    SOAPY_STARTUP_METRICS: "1",
+  };
+  delete launchEnvironment.ELECTRON_RUN_AS_NODE;
+
   const launchOptions = {
     args: options.executablePath
       ? [`--user-data-dir=${options.profileDir}`]
       : [".", `--user-data-dir=${options.profileDir}`],
     cwd: repoRoot,
-    env: {
-      ...process.env,
-      SOAPY_LOG_MAIN: "0",
-      SOAPY_STARTUP_METRICS: "1",
-    },
+    env: launchEnvironment,
   };
   if (options.entitlement) {
     launchOptions.env.SOAPY_DEV_ENTITLEMENT = options.entitlement;

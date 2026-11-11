@@ -1,5 +1,5 @@
 (function (root, factory) {
-  var api = factory(root);
+  const api = factory(root);
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
     return;
@@ -16,25 +16,25 @@
   function (root) {
     "use strict";
 
-    var DEFAULT_WORKER_URL = "src/images/effects-worker.js";
+    const DEFAULT_WORKER_URL = "src/images/effects-worker.js";
 
     function closeBitmap(bitmap) {
       if (bitmap && typeof bitmap.close === "function") {
-        try { bitmap.close(); } catch (_error) {}
+        try { bitmap.close(); } catch { /* Resource was already released. */ }
       }
     }
 
     function createProcessor(options) {
       options = options || {};
-      var workerUrl = options.workerUrl || DEFAULT_WORKER_URL;
-      var worker = null;
-      var nextId = 1;
-      var pending = Object.create(null);
-      var generations = Object.create(null);
-      var destroyed = false;
+      const workerUrl = options.workerUrl || DEFAULT_WORKER_URL;
+      let worker = null;
+      let nextId = 1;
+      const pending = Object.create(null);
+      let generations = Object.create(null);
+      let destroyed = false;
 
       function rejectPending(error) {
-        for (var id in pending) {
+        for (const id in pending) {
           if (!Object.prototype.hasOwnProperty.call(pending, id)) continue;
           pending[id].reject(error);
           delete pending[id];
@@ -43,7 +43,7 @@
 
       function resetWorker(error) {
         if (worker) {
-          try { worker.terminate(); } catch (_error) {}
+          try { worker.terminate(); } catch { /* Resource was already released. */ }
         }
         worker = null;
         if (error) rejectPending(error);
@@ -57,8 +57,8 @@
         }
         worker = new root.Worker(workerUrl);
         worker.addEventListener("message", function (event) {
-          var message = event && event.data ? event.data : {};
-          var task = pending[message.id];
+          const message = event && event.data ? event.data : {};
+          const task = pending[message.id];
           if (!task) {
             closeBitmap(message.bitmap);
             return;
@@ -73,10 +73,14 @@
             task.reject(new Error(message.error || "Unable to process the image effect."));
             return;
           }
+          if (task.onTiming) task.onTiming(Object.assign({
+            captureMs: task.captureMs,
+            roundTripMs: performance.now() - task.sentAt,
+          }, message.timing || {}));
           task.resolve(message.bitmap);
         });
         worker.addEventListener("error", function (event) {
-          var message = event && event.message
+          const message = event && event.message
             ? event.message
             : "The image effects worker failed.";
           resetWorker(new Error(message));
@@ -93,17 +97,22 @@
       }
 
       function createSourceBitmap(source, processOptions) {
-        var maxDimension = Math.max(0, Number(processOptions.maxDimension) || 0);
-        var size = getSourceDimensions(source);
-        var longest = Math.max(size.width, size.height);
+        const maxDimension = Math.max(0, Number(processOptions.maxDimension) || 0);
+        const size = getSourceDimensions(source);
+        const longest = Math.max(size.width, size.height);
         if (maxDimension > 0 && longest > maxDimension) {
-          var scale = maxDimension / longest;
+          const scale = maxDimension / longest;
           return root.createImageBitmap(source, {
             resizeWidth: Math.max(1, Math.round(size.width * scale)),
             resizeHeight: Math.max(1, Math.round(size.height * scale)),
             resizeQuality: "high",
           }).catch(function () {
-            return root.createImageBitmap(source);
+            const canvas = new root.OffscreenCanvas(
+              Math.max(1, Math.round(size.width * scale)),
+              Math.max(1, Math.round(size.height * scale)),
+            );
+            canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+            return canvas.transferToImageBitmap();
           });
         }
         return root.createImageBitmap(source);
@@ -115,16 +124,17 @@
         if (!root || typeof root.createImageBitmap !== "function") {
           throw new Error("ImageBitmap processing is unavailable.");
         }
-        var key = String(processOptions.key || "default");
-        var generation = (generations[key] || 0) + 1;
+        const key = String(processOptions.key || "default");
+        const generation = (generations[key] || 0) + 1;
         generations[key] = generation;
-        var bitmap = await createSourceBitmap(source, processOptions);
+        const captureStart = performance.now();
+        const bitmap = await createSourceBitmap(source, processOptions);
         if (destroyed || generations[key] !== generation) {
           closeBitmap(bitmap);
           return null;
         }
-        var id = nextId++;
-        var activeWorker;
+        const id = nextId++;
+        let activeWorker;
         try {
           activeWorker = ensureWorker();
         } catch (error) {
@@ -135,11 +145,14 @@
           pending[id] = {
             key: key,
             generation: generation,
+            captureMs: performance.now() - captureStart,
+            sentAt: performance.now(),
+            onTiming: processOptions.onTiming,
             resolve: resolve,
             reject: reject,
           };
           try {
-            activeWorker.postMessage({ id: id, bitmap: bitmap, effect: effect }, [bitmap]);
+            activeWorker.postMessage({ id: id, bitmap: bitmap, effect: effect, measure: !!processOptions.onTiming, submittedAt: performance.timeOrigin + performance.now() }, [bitmap]);
           } catch (error) {
             delete pending[id];
             closeBitmap(bitmap);
@@ -149,7 +162,7 @@
       }
 
       function cancel(key) {
-        var normalizedKey = String(key || "default");
+        const normalizedKey = String(key || "default");
         generations[normalizedKey] = (generations[normalizedKey] || 0) + 1;
       }
 

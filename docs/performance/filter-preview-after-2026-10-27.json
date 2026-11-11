@@ -1,0 +1,943 @@
+{
+  "platform": "linux",
+  "cpu": "AMD Ryzen 5 2600 Six-Core Processor",
+  "memoryGiB": 15.55984115600586,
+  "appRoot": "/home/inuyasha/Documents/Soapy Panels/Soapy-Panels-public",
+  "cases": [
+    {
+      "name": "1080p/grayscale",
+      "seconds": 4,
+      "metrics": {
+        "resultAgeMs": {
+          "count": 118,
+          "mean": 32.34830508475149,
+          "p95": 39.9000000001397,
+          "max": 43.300000000046566
+        },
+        "queueMs": {
+          "count": 119,
+          "mean": 0.0327731092409583,
+          "p95": 0.10000000009313226,
+          "max": 0.20000000018626451
+        },
+        "displayIntervalMs": {
+          "count": 117,
+          "mean": 34.27094017094077,
+          "p95": 49.699999999953434,
+          "max": 67.09999999997672
+        },
+        "displayAgeMs": {
+          "count": 117,
+          "mean": 38.317094017098796,
+          "p95": 50.09999999997672,
+          "max": 57.199999999953434
+        },
+        "drawMs": {
+          "count": 118,
+          "mean": 0.18644067796018227,
+          "p95": 0.30000000004656613,
+          "max": 0.4000000001396984
+        },
+        "captureMs": {
+          "count": 117,
+          "mean": 0.33931623933176136,
+          "p95": 0.5999999999767169,
+          "max": 0.6999999999534339
+        },
+        "roundTripMs": {
+          "count": 117,
+          "mean": 31.929914529906966,
+          "p95": 39.60000000009313,
+          "max": 42.60000000009313
+        },
+        "filterMs": {
+          "count": 117,
+          "mean": 26.56495726496005,
+          "p95": 29.800000000046566,
+          "max": 38.699999999953434
+        },
+        "workerMs": {
+          "count": 117,
+          "mean": 30.686324786328168,
+          "p95": 34.09999999997672,
+          "max": 42.29999999993015
+        },
+        "workerQueueMs": {
+          "count": 117,
+          "mean": 0.11458542000534189,
+          "p95": 0.199951171875,
+          "max": 4.300048828125
+        }
+      },
+      "queue": {
+        "active": 1,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 3,
+          "quality": 540,
+          "width": 540,
+          "frameCount": 1,
+          "pixels": 164160,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"grayscale\",\"amount\":1,\"params\":{}}|3|540|video:166:1.5",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/threshold",
+      "seconds": 4,
+      "metrics": {
+        "resultAgeMs": {
+          "count": 121,
+          "mean": 26.54297520660926,
+          "p95": 37.5,
+          "max": 43.4000000001397
+        },
+        "queueMs": {
+          "count": 120,
+          "mean": 0.027500000002328308,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "displayIntervalMs": {
+          "count": 119,
+          "mean": 33.79243697478835,
+          "p95": 66.60000000009313,
+          "max": 83.69999999995343
+        },
+        "displayAgeMs": {
+          "count": 119,
+          "mean": 32.95210084034044,
+          "p95": 50,
+          "max": 50.300000000046566
+        },
+        "drawMs": {
+          "count": 119,
+          "mean": 0.18319327731327223,
+          "p95": 0.39999999990686774,
+          "max": 0.4000000001396984
+        },
+        "captureMs": {
+          "count": 120,
+          "mean": 0.3299999999910748,
+          "p95": 0.5,
+          "max": 0.6000000000931323
+        },
+        "roundTripMs": {
+          "count": 120,
+          "mean": 26.142500000008535,
+          "p95": 37.0999999998603,
+          "max": 43
+        },
+        "filterMs": {
+          "count": 120,
+          "mean": 19.667500000000775,
+          "p95": 29.600000000093132,
+          "max": 33.699999999953434
+        },
+        "workerMs": {
+          "count": 120,
+          "mean": 23.541666666678307,
+          "p95": 34.10000000009313,
+          "max": 37.300000000046566
+        },
+        "workerQueueMs": {
+          "count": 120,
+          "mean": 0.117547607421875,
+          "p95": 0.2001953125,
+          "max": 3.800048828125
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 8,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"threshold\",\"amount\":1,\"params\":{\"auto\":true,\"level\":0.5,\"softness\":0}}|8|360|video:343:1.4",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/posterize",
+      "seconds": 4,
+      "metrics": {
+        "queueMs": {
+          "count": 121,
+          "mean": 0.024793388435524727,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "captureMs": {
+          "count": 121,
+          "mean": 0.33553719007764166,
+          "p95": 0.5,
+          "max": 1.5
+        },
+        "roundTripMs": {
+          "count": 121,
+          "mean": 24.737190082642318,
+          "p95": 31.700000000186265,
+          "max": 44.699999999953434
+        },
+        "filterMs": {
+          "count": 121,
+          "mean": 19.489256198344798,
+          "p95": 24.399999999906868,
+          "max": 37.89999999990687
+        },
+        "workerMs": {
+          "count": 121,
+          "mean": 23.167768595049402,
+          "p95": 28.300000000046566,
+          "max": 42
+        },
+        "workerQueueMs": {
+          "count": 121,
+          "mean": 0.09013026213842976,
+          "p95": 0.199951171875,
+          "max": 1.800048828125
+        },
+        "resultAgeMs": {
+          "count": 121,
+          "mean": 25.10661157024139,
+          "p95": 32.10000000009313,
+          "max": 45
+        },
+        "displayIntervalMs": {
+          "count": 118,
+          "mean": 33.65338983050926,
+          "p95": 50.60000000009313,
+          "max": 83.5
+        },
+        "displayAgeMs": {
+          "count": 118,
+          "mean": 31.728813559304275,
+          "p95": 40.0999999998603,
+          "max": 50.4000000001397
+        },
+        "drawMs": {
+          "count": 120,
+          "mean": 0.16583333332479622,
+          "p95": 0.30000000004656613,
+          "max": 0.30000000004656613
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 13,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|13|360|video:519:1.266667",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/duotone",
+      "seconds": 4,
+      "metrics": {
+        "queueMs": {
+          "count": 119,
+          "mean": 0.026050420166893292,
+          "p95": 0.10000000009313226,
+          "max": 0.19999999995343387
+        },
+        "captureMs": {
+          "count": 118,
+          "mean": 0.3457627118608551,
+          "p95": 0.5999999998603016,
+          "max": 0.6000000000931323
+        },
+        "roundTripMs": {
+          "count": 118,
+          "mean": 20.227966101700044,
+          "p95": 29,
+          "max": 32.4000000001397
+        },
+        "filterMs": {
+          "count": 118,
+          "mean": 13.77796610169531,
+          "p95": 23.0999999998603,
+          "max": 24.5
+        },
+        "workerMs": {
+          "count": 118,
+          "mean": 17.770338983059926,
+          "p95": 28.4000000001397,
+          "max": 30.199999999953434
+        },
+        "workerQueueMs": {
+          "count": 118,
+          "mean": 0.1000438625529661,
+          "p95": 0.2001953125,
+          "max": 0.2001953125
+        },
+        "resultAgeMs": {
+          "count": 118,
+          "mean": 20.61779661016081,
+          "p95": 29.399999999906868,
+          "max": 32.800000000046566
+        },
+        "displayIntervalMs": {
+          "count": 118,
+          "mean": 33.93559322034017,
+          "p95": 67.19999999995343,
+          "max": 67.4000000001397
+        },
+        "displayAgeMs": {
+          "count": 118,
+          "mean": 25.08983050846353,
+          "p95": 34.10000000009313,
+          "max": 45.199999999953434
+        },
+        "drawMs": {
+          "count": 118,
+          "mean": 0.15847457626487238,
+          "p95": 0.30000000004656613,
+          "max": 0.4000000001396984
+        }
+      },
+      "queue": {
+        "active": 1,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 18,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": true,
+          "pending": false,
+          "key": "{\"type\":\"duotone\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"highlight\":\"#ff2d55\",\"balance\":0.5}}|18|360|video:693:1.066667",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/gradientMap",
+      "seconds": 4,
+      "metrics": {
+        "queueMs": {
+          "count": 119,
+          "mean": 0.03361344539184718,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "displayIntervalMs": {
+          "count": 118,
+          "mean": 33.87033898305243,
+          "p95": 65.69999999995343,
+          "max": 67.5
+        },
+        "displayAgeMs": {
+          "count": 118,
+          "mean": 28.082203389820247,
+          "p95": 34.299999999813735,
+          "max": 41.199999999953434
+        },
+        "drawMs": {
+          "count": 118,
+          "mean": 0.16101694916635437,
+          "p95": 0.30000000004656613,
+          "max": 0.4000000001396984
+        },
+        "captureMs": {
+          "count": 119,
+          "mean": 0.33193277309554775,
+          "p95": 0.5,
+          "max": 0.5999999998603016
+        },
+        "roundTripMs": {
+          "count": 119,
+          "mean": 21.682352941166297,
+          "p95": 30,
+          "max": 39.5999999998603
+        },
+        "filterMs": {
+          "count": 119,
+          "mean": 14.038655462181744,
+          "p95": 23.5,
+          "max": 28.100000000093132
+        },
+        "workerMs": {
+          "count": 119,
+          "mean": 17.926050420181372,
+          "p95": 28,
+          "max": 32.300000000046566
+        },
+        "workerQueueMs": {
+          "count": 119,
+          "mean": 0.10257599133403361,
+          "p95": 0.2001953125,
+          "max": 0.2001953125
+        },
+        "resultAgeMs": {
+          "count": 119,
+          "mean": 22.060504201666586,
+          "p95": 30.300000000046566,
+          "max": 40.0999999998603
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 23,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"gradientMap\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|23|360|video:868:0.9",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/slider-drag",
+      "seconds": 4,
+      "metrics": {
+        "resultAgeMs": {
+          "count": 142,
+          "mean": 18.36619718310023,
+          "p95": 29.199999999953434,
+          "max": 33.199999999953434
+        },
+        "displayIntervalMs": {
+          "count": 139,
+          "mean": 28.930215827338465,
+          "p95": 65.80000000004657,
+          "max": 115.80000000004657
+        },
+        "displayAgeMs": {
+          "count": 139,
+          "mean": 23.064028776972723,
+          "p95": 34.39999999990687,
+          "max": 37.699999999953434
+        },
+        "drawMs": {
+          "count": 141,
+          "mean": 0.13900709220089336,
+          "p95": 0.20000000018626451,
+          "max": 0.39999999990686774
+        },
+        "queueMs": {
+          "count": 182,
+          "mean": 0.06483516485205146,
+          "p95": 0.19999999995343387,
+          "max": 0.20000000018626451
+        },
+        "captureMs": {
+          "count": 180,
+          "mean": 0.26166666666201005,
+          "p95": 0.5,
+          "max": 0.7000000001862645
+        },
+        "roundTripMs": {
+          "count": 180,
+          "mean": 18.762222222236193,
+          "p95": 30.199999999953434,
+          "max": 34.800000000046566
+        },
+        "filterMs": {
+          "count": 180,
+          "mean": 11.535555555557625,
+          "p95": 19.0999999998603,
+          "max": 26.899999999906868
+        },
+        "workerMs": {
+          "count": 180,
+          "mean": 15.399444444446514,
+          "p95": 24.0999999998603,
+          "max": 31.300000000046566
+        },
+        "workerQueueMs": {
+          "count": 180,
+          "mean": 0.08783365885416666,
+          "p95": 0.2001953125,
+          "max": 1.60009765625
+        },
+        "adjustmentMs": {
+          "count": 68,
+          "mean": 58.98676470588372,
+          "p95": 86.5,
+          "max": 117.19999999995343
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 97,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"gradientMap\",\"amount\":0.66,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|97|360|video:1041:0.666667",
+          "error": null
+        }
+      ],
+      "previewStatus": "Updating preview on canvas\u2026"
+    },
+    {
+      "name": "gif/grayscale",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.11500000000233,
+          "p95": 100.30000000004657,
+          "max": 100.39999999990687
+        },
+        "displayAgeMs": {
+          "count": 20,
+          "mean": 2369.4800000000278,
+          "p95": 3220.3000000000466,
+          "max": 3320.5
+        },
+        "drawMs": {
+          "count": 20,
+          "mean": 0.5000000000349246,
+          "p95": 0.8000000000465661,
+          "max": 0.8000000000465661
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 1,
+          "quality": 1280,
+          "width": 512,
+          "frameCount": 6,
+          "pixels": 884736,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"grayscale\",\"amount\":1,\"params\":{}}|1|512|gif:2",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/threshold",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.10500000000465,
+          "p95": 100.30000000004657,
+          "max": 100.39999999990687
+        },
+        "displayAgeMs": {
+          "count": 20,
+          "mean": 2452.9899999999093,
+          "p95": 3303.899999999907,
+          "max": 3404
+        },
+        "drawMs": {
+          "count": 20,
+          "mean": 0.8000000000232831,
+          "p95": 0.9000000001396984,
+          "max": 1
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 3,
+          "quality": 960,
+          "width": 512,
+          "frameCount": 6,
+          "pixels": 884736,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"threshold\",\"amount\":1,\"params\":{\"auto\":true,\"level\":0.5,\"softness\":0}}|3|512|gif:5",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/posterize",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.10999999999767,
+          "p95": 100.4000000001397,
+          "max": 100.5
+        },
+        "displayAgeMs": {
+          "count": 20,
+          "mean": 2469.5100000000443,
+          "p95": 3320.600000000093,
+          "max": 3420.6999999999534
+        },
+        "drawMs": {
+          "count": 20,
+          "mean": 0.5900000000256114,
+          "p95": 0.8000000000465661,
+          "max": 0.8000000000465661
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 5,
+          "quality": 720,
+          "width": 512,
+          "frameCount": 6,
+          "pixels": 884736,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|5|512|gif:2",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/duotone",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.11000000000931,
+          "p95": 100.29999999981374,
+          "max": 100.4000000001397
+        },
+        "displayAgeMs": {
+          "count": 20,
+          "mean": 2369.6800000000976,
+          "p95": 3220.9000000001397,
+          "max": 3320.7000000001863
+        },
+        "drawMs": {
+          "count": 20,
+          "mean": 0.7399999999906868,
+          "p95": 0.8999999999068677,
+          "max": 0.8999999999068677
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 7,
+          "quality": 720,
+          "width": 512,
+          "frameCount": 6,
+          "pixels": 884736,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"duotone\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"highlight\":\"#ff2d55\",\"balance\":0.5}}|7|512|gif:5",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/gradientMap",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.11500000000233,
+          "p95": 100.30000000004657,
+          "max": 100.4000000001397
+        },
+        "displayAgeMs": {
+          "count": 20,
+          "mean": 2369.5999999999535,
+          "p95": 3220.399999999907,
+          "max": 3320.8000000000466
+        },
+        "drawMs": {
+          "count": 20,
+          "mean": 0.7649999999906868,
+          "p95": 0.9000000001396984,
+          "max": 1
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 9,
+          "quality": 540,
+          "width": 512,
+          "frameCount": 6,
+          "pixels": 884736,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"gradientMap\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|9|512|gif:1",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "4k/posterize",
+      "seconds": 4,
+      "metrics": {
+        "resultAgeMs": {
+          "count": 107,
+          "mean": 31.114953271028472,
+          "p95": 80.69999999995343,
+          "max": 144.30000000004657
+        },
+        "queueMs": {
+          "count": 107,
+          "mean": 0.031775700931533056,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "displayIntervalMs": {
+          "count": 105,
+          "mean": 38.29428571428704,
+          "p95": 83.39999999990687,
+          "max": 166.80000000004657
+        },
+        "displayAgeMs": {
+          "count": 105,
+          "mean": 38.69142857143611,
+          "p95": 87.69999999995343,
+          "max": 158
+        },
+        "drawMs": {
+          "count": 106,
+          "mean": 0.14245283018736132,
+          "p95": 0.20000000018626451,
+          "max": 0.30000000004656613
+        },
+        "captureMs": {
+          "count": 106,
+          "mean": 0.30377358490741757,
+          "p95": 0.5,
+          "max": 0.6999999999534339
+        },
+        "roundTripMs": {
+          "count": 106,
+          "mean": 29.708490566038613,
+          "p95": 49.700000000186265,
+          "max": 88.10000000009313
+        },
+        "filterMs": {
+          "count": 106,
+          "mean": 22.627358490557253,
+          "p95": 42.699999999953434,
+          "max": 79.69999999995343
+        },
+        "workerMs": {
+          "count": 106,
+          "mean": 28.083962264145672,
+          "p95": 49.39999999990687,
+          "max": 88
+        },
+        "workerQueueMs": {
+          "count": 106,
+          "mean": 0.10381734596108491,
+          "p95": 0.199951171875,
+          "max": 3.699951171875
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "large",
+          "generation": 3,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|3|360|video:165:1.466667",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "two-videos",
+      "seconds": 4,
+      "metrics": {
+        "resultAgeMs": {
+          "count": 166,
+          "mean": 23.69216867470665,
+          "p95": 29.4000000001397,
+          "max": 37.300000000046566
+        },
+        "queueMs": {
+          "count": 168,
+          "mean": 22.782142857145075,
+          "p95": 29.5999999998603,
+          "max": 36.5
+        },
+        "displayIntervalMs": {
+          "count": 165,
+          "mean": 48.51696969696998,
+          "p95": 58.199999999953434,
+          "max": 102.0999999998603
+        },
+        "displayAgeMs": {
+          "count": 165,
+          "mean": 31.12484848484905,
+          "p95": 39.299999999813735,
+          "max": 42.700000000186265
+        },
+        "drawMs": {
+          "count": 154,
+          "mean": 0.17337662336876156,
+          "p95": 0.30000000004656613,
+          "max": 0.4000000001396984
+        },
+        "captureMs": {
+          "count": 165,
+          "mean": 0.28969696970289627,
+          "p95": 0.4000000001396984,
+          "max": 0.5
+        },
+        "roundTripMs": {
+          "count": 165,
+          "mean": 23.38969696969725,
+          "p95": 29.0999999998603,
+          "max": 36.89999999990687
+        },
+        "filterMs": {
+          "count": 165,
+          "mean": 14.649090909097119,
+          "p95": 22,
+          "max": 25.5
+        },
+        "workerMs": {
+          "count": 165,
+          "mean": 18.96181818181649,
+          "p95": 27.199999999953434,
+          "max": 32.10000000009313
+        },
+        "workerQueueMs": {
+          "count": 165,
+          "mean": 0.10246656013257575,
+          "p95": 0.199951171875,
+          "max": 5.300048828125
+        }
+      },
+      "queue": {
+        "active": 1,
+        "pending": 1,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "large",
+          "generation": 6,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": true,
+          "pending": false,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|6|360|video:345:1.466667",
+          "error": null
+        },
+        {
+          "id": "second",
+          "generation": 3,
+          "quality": 360,
+          "width": 360,
+          "frameCount": 1,
+          "pixels": 73080,
+          "active": true,
+          "pending": false,
+          "key": "{\"type\":\"gradientMap\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|3|360|video:164:1.433333",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    }
+  ],
+  "runtime": {
+    "electron": "43.1.1",
+    "chrome": "150.0.7871.114"
+  },
+  "display": {
+    "width": 1920,
+    "height": 1032,
+    "dpr": 1
+  }
+}

@@ -183,6 +183,8 @@ async function main() {
       const files = filesForSuite(suiteName, definition, requestedFiles);
       if (files.length === 0) continue;
       const args = ["--test"];
+      const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
+      if (nodeMajor === 22 && nodeMinor < 13) args.push("--experimental-sqlite");
       if (definition.concurrency) {
         args.push(`--test-concurrency=${definition.concurrency}`);
       }

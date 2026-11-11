@@ -1,96 +1,158 @@
-name: Release Linux AppImage
+name: Validate and release Linux AppImage
 
 on:
+  pull_request:
+  workflow_dispatch:
   push:
     tags:
       - "v*.*.*"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    name: Build and release AppImage
-    runs-on: ubuntu-latest
-
+  build:
+    name: Build Linux x64 on Ubuntu 22.04
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    outputs:
+      appimage: ${{ steps.artifact.outputs.appimage }}
+      checksum: ${{ steps.artifact.outputs.checksum }}
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      - name: Confirm tag matches package version
+      - name: Confirm release tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           package_version="$(node -p "require('./package.json').version")"
-          tag_version="${GITHUB_REF_NAME#v}"
-          if [[ "$tag_version" != "$package_version" ]]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json version $package_version."
-            exit 1
-          fi
+          test "${GITHUB_REF_NAME#v}" = "$package_version"
+      - name: Install desktop test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth libgtk-3-0 libnss3 libgbm1 libasound2 libfuse2
+      - run: npm ci
+      - run: npm run check
+      - run: npm run lint:release
+      - run: npm run licenses:check
+      - run: npm run audit:security
+      - name: Electron end-to-end tests
+        run: xvfb-run -a -s '-screen 0 1600x1000x24' npm run test:e2e
+      - name: Build and checksum AppImage
+        run: npm run dist:linux
+      - run: npm run check:package:linux
+      - run: npm run check:artifact:linux
+      - name: Packaged executable smoke test
+        run: xvfb-run -a -s '-screen 0 1600x1000x24' npm run smoke:linux -- unpacked
+      - name: Select current release assets
+        id: artifact
+        run: |
+          node -e 'const a = require("./tools/packaging/linux-artifact"); const fs = require("node:fs"); fs.appendFileSync(process.env.GITHUB_OUTPUT, `appimage=${a.artifactName}\nchecksum=${a.artifactName}.sha256\n`);'
+      - name: Retain release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64-appimage
+          if-no-files-found: error
+          path: |
+            dist/linux/${{ steps.artifact.outputs.appimage }}
+            dist/linux/${{ steps.artifact.outputs.checksum }}
+      - name: Retain build smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-diagnostics
+          if-no-files-found: ignore
+          path: out/linux-validation/
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Linux AppImage
-        run: npm run dist:linux -- --publish never
-
-      - name: Validate Linux package
-        run: npm run check:package:linux
-
-      - name: Validate AppImage and create checksum
-        id: appimage
+  validate:
+    name: Run AppImage on ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install desktop and FUSE dependencies
         shell: bash
         run: |
-          mapfile -t appimages < <(find dist/linux -maxdepth 1 -type f -name '*.AppImage' -print)
-          if [[ "${#appimages[@]}" -ne 1 ]]; then
-            echo "Expected exactly one AppImage in dist/linux, found ${#appimages[@]}."
-            exit 1
+          sudo apt-get update
+          if [[ '${{ matrix.os }}' == 'ubuntu-24.04' ]]; then
+            sudo apt-get install -y xvfb xauth libgtk-3-0t64 libnss3 libgbm1 libasound2t64 libfuse2t64
+          else
+            sudo apt-get install -y xvfb xauth libgtk-3-0 libnss3 libgbm1 libasound2 libfuse2
           fi
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x64-appimage
+          path: dist/linux
+      - name: Restore executable permission and verify downloaded artifact
+        env:
+          APPIMAGE_NAME: ${{ needs.build.outputs.appimage }}
+        run: |
+          chmod +x "dist/linux/$APPIMAGE_NAME"
+          npm run check:artifact:linux
+      - name: Test normal launch and extraction fallback using the same AppImage
+        shell: bash
+        run: |
+          result=0
+          for mode in appimage extracted; do
+            if ! xvfb-run -a -s '-screen 0 1600x1000x24' npm run smoke:linux -- "$mode"; then
+              result=1
+            fi
+          done
+          exit "$result"
+      - name: Retain compatibility diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-smoke-${{ matrix.os }}
+          if-no-files-found: ignore
+          path: out/linux-validation/
 
-          appimage_path="${appimages[0]}"
-          if [[ ! -x "$appimage_path" ]]; then
-            echo "AppImage is not executable: $appimage_path"
-            exit 1
-          fi
-
-          "$appimage_path" --appimage-version
-
-          appimage_name="$(basename "$appimage_path")"
-          release_appimage_name="${appimage_name// /.}"
-          release_appimage_path="dist/linux/${release_appimage_name}"
-          mv "$appimage_path" "$release_appimage_path"
-
-          appimage_path="$release_appimage_path"
-          appimage_name="$release_appimage_name"
-          checksum_path="dist/linux/${appimage_name}.sha256"
-          (
-            cd dist/linux
-            sha256sum "$appimage_name" > "${appimage_name}.sha256"
-          )
-
-          echo "appimage_path=$appimage_path" >> "$GITHUB_OUTPUT"
-          echo "checksum_path=$checksum_path" >> "$GITHUB_OUTPUT"
-
+  release:
+    name: Publish validated tag assets
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build, validate]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x64-appimage
+          path: dist/linux
+      - name: Verify release bytes
+        working-directory: dist/linux
+        env:
+          CHECKSUM_NAME: ${{ needs.build.outputs.checksum }}
+        run: sha256sum -c "$CHECKSUM_NAME"
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          APPIMAGE_PATH: ${{ steps.appimage.outputs.appimage_path }}
-          CHECKSUM_PATH: ${{ steps.appimage.outputs.checksum_path }}
+          APPIMAGE_NAME: ${{ needs.build.outputs.appimage }}
+          CHECKSUM_NAME: ${{ needs.build.outputs.checksum }}
         shell: bash
         run: |
+          appimage_path="dist/linux/$APPIMAGE_NAME"
+          checksum_path="dist/linux/$CHECKSUM_NAME"
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "$APPIMAGE_PATH" "$CHECKSUM_PATH" --clobber
+            gh release upload "$GITHUB_REF_NAME" "$appimage_path" "$checksum_path" --clobber
           else
             release_flags=(--verify-tag --generate-notes --title "Soapy Panels $GITHUB_REF_NAME")
             if [[ "$GITHUB_REF_NAME" == *-* ]]; then
               release_flags+=(--prerelease)
             fi
-
-            gh release create "$GITHUB_REF_NAME" "$APPIMAGE_PATH" "$CHECKSUM_PATH" \
-              "${release_flags[@]}"
+            gh release create "$GITHUB_REF_NAME" "$appimage_path" "$checksum_path" "${release_flags[@]}"
           fi

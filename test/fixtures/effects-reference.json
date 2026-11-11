@@ -1,0 +1,137 @@
+[
+  {
+    "effect": {
+      "type": "grayscale",
+      "amount": 1,
+      "params": {}
+    },
+    "sha256": "bbb35c9933150e6d87de349d12c09e2ac509a9cf09009266b53c25e6ac7ec0de"
+  },
+  {
+    "effect": {
+      "type": "grayscale",
+      "amount": 0.37,
+      "params": {}
+    },
+    "sha256": "235fb0322ab8741835a8724b07621a787cd5416e6cbafc861a8791c90b075336"
+  },
+  {
+    "effect": {
+      "type": "threshold",
+      "amount": 1,
+      "params": {
+        "auto": true,
+        "level": 0.5,
+        "softness": 0
+      }
+    },
+    "sha256": "dcbad84f2844212c64a5e54db25efaaec8a8db1af5a57cdd50a9616b7ad81161"
+  },
+  {
+    "effect": {
+      "type": "threshold",
+      "amount": 0.37,
+      "params": {
+        "auto": true,
+        "level": 0.5,
+        "softness": 0
+      }
+    },
+    "sha256": "eb51f4f20855755bfe0e4da70c98ed899d1a25d2f12454aefde4a919aafefd2d"
+  },
+  {
+    "effect": {
+      "type": "posterize",
+      "amount": 1,
+      "params": {
+        "levels": 6,
+        "dither": 0
+      }
+    },
+    "sha256": "012165e5db88600a8fe30ff20a415e3cd67ac1828ecd67956bedf2b4d4c68a1a"
+  },
+  {
+    "effect": {
+      "type": "posterize",
+      "amount": 0.37,
+      "params": {
+        "levels": 6,
+        "dither": 0
+      }
+    },
+    "sha256": "bbfa04d5c4ab236410b029ed8137dea3942aaa68705c3036533e3c71faa2cebc"
+  },
+  {
+    "effect": {
+      "type": "duotone",
+      "amount": 1,
+      "params": {
+        "shadow": "#000000",
+        "highlight": "#ff2d55",
+        "balance": 0.5
+      }
+    },
+    "sha256": "bd1bef4501ef200175c912ef4f8cc481a1a449dc42df06690a00cb897d17dbf6"
+  },
+  {
+    "effect": {
+      "type": "duotone",
+      "amount": 0.37,
+      "params": {
+        "shadow": "#000000",
+        "highlight": "#ff2d55",
+        "balance": 0.5
+      }
+    },
+    "sha256": "22f367da8cf8b53d8c48ee447e916ecd03a99d9fc329c8ca5f1c95f656e3cfe4"
+  },
+  {
+    "effect": {
+      "type": "gradientMap",
+      "amount": 1,
+      "params": {
+        "shadow": "#000000",
+        "midtone": "#ff2d55",
+        "highlight": "#ffffff",
+        "midpoint": 0.5
+      }
+    },
+    "sha256": "d3fdda27d6deca2cbae90b3095521b3b5b2c17486b1698ed2349201543f81503"
+  },
+  {
+    "effect": {
+      "type": "gradientMap",
+      "amount": 0.37,
+      "params": {
+        "shadow": "#000000",
+        "midtone": "#ff2d55",
+        "highlight": "#ffffff",
+        "midpoint": 0.5
+      }
+    },
+    "sha256": "5c7991d6033dbf8c485d2116551dd1243f51086b476b225d7f1e2698b3e6361c"
+  },
+  {
+    "effect": {
+      "type": "posterize",
+      "amount": 1,
+      "params": {
+        "levels": 3,
+        "dither": 0.8
+      }
+    },
+    "sha256": "deaad3b9de06075b6ff2a737c7124a69ecc99a3a275f1cf7e33a087153dcf1dc"
+  },
+  {
+    "effect": {
+      "type": "threshold",
+      "amount": 1,
+      "params": {
+        "auto": false,
+        "level": 0.4,
+        "softness": 0.1
+      }
+    },
+    "sha256": "83ef5f716a3133228b367fe8cc563b093fb6bb40b242a5f72709be2f2edbe40d"
+  }
+]
