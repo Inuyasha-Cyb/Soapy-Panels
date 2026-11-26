@@ -1,4 +1,4 @@
-const { app, BrowserWindow, protocol } = require("electron");
+const { app, BrowserWindow, protocol, session } = require("electron");
 const { IPC_CHANNELS } = require("../shared/ipc-channels");
 const {
   configureProcessFlags,
@@ -30,10 +30,22 @@ const startupMetrics = createStartupMetrics({
 startupMetrics.mark("mainEntry");
 
 registerProcessErrorLogging();
+
+if (!app || !protocol) {
+  const message =
+    "Soapy Panels must be launched by Electron. " +
+    "ELECTRON_RUN_AS_NODE is set or the Electron runtime is unavailable.";
+  logMain(`fatal startup ${message}`);
+  console.error(message);
+  process.exit(1);
+}
+
 registerAppProtocolPrivileges(protocol);
+if (process.platform === "linux") app.setDesktopName("com.soapy.panels.desktop");
 const launchPolicy = configureProcessFlags(app);
 
 const assetStore = createUserAssetStore();
+let exportServices = null;
 
 function broadcast(channel, payload) {
   BrowserWindow.getAllWindows().forEach((win) => {
@@ -60,6 +72,13 @@ logMain(
 
 app.whenReady().then(() => {
   startupMetrics.mark("appReady");
+  const appEdition = resolveAppEdition(app);
+  if (appEdition === APP_EDITIONS.LINUX_COMMUNITY) {
+    // Disabling text underlines alone does not stop dictionary downloads.
+    // Clear the session languages before the first renderer is created too.
+    session.defaultSession.setSpellCheckerEnabled(false);
+    session.defaultSession.setSpellCheckerLanguages([]);
+  }
   registerAppProcessLogging(app);
   registerAppFileProtocol(protocol);
   startupMetrics.mark("protocolReady");
@@ -80,7 +99,6 @@ app.whenReady().then(() => {
   });
   startupMetrics.mark("assetStoreReady");
 
-  const appEdition = resolveAppEdition(app);
   const storePurchasesEnabled = appEdition === APP_EDITIONS.WINDOWS_STORE;
   const developmentEntitlement = storePurchasesEnabled
     ? resolveDevelopmentEntitlement(process.env, app.isPackaged)
@@ -90,6 +108,8 @@ app.whenReady().then(() => {
     const { createMonetizationStore } = require("./monetization-store");
     monetizationStore = createMonetizationStore({
       userDataPath: app.getPath("userData"),
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
       developmentEntitlement,
     });
   }
@@ -99,15 +119,15 @@ app.whenReady().then(() => {
     logMain(`development entitlement simulation=${developmentEntitlement}`);
   }
 
-  registerIpcHandlers(assetStore, monetizationStore, {
+  exportServices = registerIpcHandlers(assetStore, monetizationStore, {
     appEdition,
     startupMetrics,
   });
   startupMetrics.mark("ipcReady");
-  createWindow({ startupMetrics });
+  createWindow({ startupMetrics, appEdition });
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createWindow({ appEdition });
   });
 });
 
@@ -115,6 +135,34 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", () => {
-  assetStore.close();
+let quitPending = false;
+let quitReady = false;
+app.on("before-quit", event => {
+  if (quitReady) return;
+  event.preventDefault();
+  if (quitPending) return;
+  quitPending = true;
+  const windows = BrowserWindow.getAllWindows();
+  Promise.all(windows.map(win => win.requestProjectClose()))
+    .then(async results => {
+      if (!results.every(Boolean)) return;
+      if (exportServices) {
+        let timeout;
+        try {
+          await Promise.race([
+            exportServices.dispose().catch(error => logMain(`Export shutdown cleanup deferred: ${error.code || "IO_ERROR"}`)),
+            new Promise(resolve => { timeout = setTimeout(() => {
+              exportServices.cancelHelpers();
+              logMain("Export shutdown cleanup exceeded five seconds; private leftovers will be retried at startup.");
+              resolve();
+            }, 5000); }),
+          ]);
+        } finally { clearTimeout(timeout); }
+      }
+      quitReady = true;
+      app.quit();
+    })
+    .catch(error => logMain(`Close coordination failed: ${error.code || "IO_ERROR"}`))
+    .finally(() => { quitPending = false; });
 });
+app.on("will-quit", () => { assetStore.close(); });

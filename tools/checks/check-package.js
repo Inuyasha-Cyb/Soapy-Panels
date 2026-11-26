@@ -4,6 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { getHelpDocuments } = require("../../app/shared/app-paths");
 
 const root = path.resolve(__dirname, "..", "..");
 const target = String(process.argv[2] || "windows").toLowerCase();
@@ -24,7 +25,8 @@ if (!TARGETS[target]) {
 }
 
 const profile = TARGETS[target];
-const resourcesPath = path.join(profile.unpacked, "resources");
+const unpackedPath = process.argv[3] ? path.resolve(process.argv[3]) : profile.unpacked;
+const resourcesPath = path.join(unpackedPath, "resources");
 const asarPath = path.join(resourcesPath, "app.asar");
 const noticesPath = path.join(resourcesPath, "legal", "OPEN_SOURCE_NOTICES.txt");
 
@@ -72,24 +74,60 @@ function readTextFromAsar(entry) {
 for (const required of [
   "/package.json",
   "/app/main/index.js",
+  "/app/main/help-documents.js",
+  "/app/main/project-recovery-store.js",
+  "/app/main/recovery-coordinator.js",
+  "/app/main/project-recovery-ipc.js",
+  "/app/renderer/src/project/recovery.js",
+  "/app/renderer/src/project/recovery-ui.js",
   "/app/main/app-edition.js",
+  "/app/main/export-stream-sessions.js",
+  "/app/main/export-staging.js",
+  "/app/main/export-private-windows.js",
+  "/app/main/export-private-windows.ps1",
   "/app/preload/index.js",
   "/app/shared/app-editions.js",
   "/app/shared/ipc-channels.js",
   "/app/shared/font-coverage.js",
   "/app/renderer/index.html",
   "/app/renderer/src/boot.js",
+  "/app/renderer/src/ui/linux-color-picker.js",
+  "/app/renderer/src/ui/color-magnifier.js",
+  "/app/renderer/styles/linux-color-picker.css",
+  "/app/renderer/src/media/gif-resource-policy.js",
+  "/app/renderer/src/media/gif.js",
+  "/app/renderer/src/media/gif-decode-worker.js",
+  "/app/renderer/vendor/omggif/omggif.js",
   "/app/renderer/src/fonts/compatibility.js",
   "/app/renderer/assets/fonts/local-font-coverage.manifest.js",
   "/app/renderer/assets/stickers/stickers.manifest.js",
-  "/app/renderer/docs/legal/Soapy_Panels_Privacy_Policy.pdf",
-  "/app/renderer/docs/legal/Soapy_Panels_Terms_of_Service.pdf",
   "/packaging/assets/icons/icon.ico",
   "/packaging/assets/icons/icon.icns",
   "/packaging/assets/icons/icon.png",
   "/packaging/THIRD_PARTY_NOTICES.txt",
 ]) {
   if (!has(required)) fail(`packaged app is missing ${required}`);
+}
+
+for (const relative of Object.values(getHelpDocuments(profile.edition))) {
+  const name = path.basename(relative);
+  try {
+    const external = fs.readFileSync(path.join(resourcesPath, "legal", name));
+    const embedded = asar.extractFile(asarPath, path.join("app", "renderer", "docs", "legal", name));
+    if (!external.equals(embedded) || external.subarray(0, 5).toString() !== "%PDF-") {
+      fail(`external legal document must match the embedded PDF: ${name}`);
+    }
+  } catch (error) {
+    fail(`unable to read legal document ${name}: ${error.message}`);
+  }
+}
+
+const otherEdition = target === "linux" ? "windows-store" : "linux-community";
+for (const relative of Object.values(getHelpDocuments(otherEdition))) {
+  const name = path.basename(relative);
+  if (has(`/app/renderer/docs/legal/${name}`) || fs.existsSync(path.join(resourcesPath, "legal", name))) {
+    fail(`package must not contain another edition's legal document: ${name}`);
+  }
 }
 
 for (const forbiddenPrefix of [
@@ -115,6 +153,10 @@ try {
   fail(`unable to read packaged metadata: ${error.message}`);
 }
 if (packageMetadata) {
+  const sourceMetadata = require("../../package.json");
+  if (packageMetadata.version !== sourceMetadata.version) {
+    fail(`expected version=${sourceMetadata.version}, received ${packageMetadata.version}`);
+  }
   if (packageMetadata.soapyEdition !== profile.edition) {
     fail(`expected soapyEdition=${profile.edition}, received ${packageMetadata.soapyEdition || "(missing)"}`);
   }
@@ -144,13 +186,47 @@ const storeRuntimeEntries = [
 ];
 
 if (target === "windows") {
-  if (!fs.existsSync(storeBridgePath)) fail("Windows package is missing the Store bridge");
+  const { createWindowsStoreBridge } = require("../../app/main/windows-store-bridge");
+  const bridge = createWindowsStoreBridge({ isPackaged: true, resourcesPath });
+  if (!bridge.resolveHelperPath()) fail("Windows package Store bridge is missing, nonregular, or redirected outside its bundled location");
   if (!fs.existsSync(storeLauncherPath)) fail("Windows package is missing the Store launcher");
   for (const entry of [adModule, adStyles, ...storeRuntimeEntries]) {
     if (!has(entry)) fail(`Windows package is missing ${entry}`);
   }
   if (!hasPrefix(adAssets)) fail("Windows package is missing advertising assets");
 } else {
+  if (packageMetadata?.desktopName !== 'com.soapy.panels.desktop') fail('Linux desktop identity must be com.soapy.panels.desktop');
+  if (process.argv.includes('--appimage')) {
+    try {
+      const desktop = fs.readFileSync(path.join(unpackedPath, 'com.soapy.panels.desktop'), 'utf8');
+      if (!/^StartupWMClass=com\.soapy\.panels$/m.test(desktop)) fail('AppImage window class does not match desktop identity');
+      const iconName = /^Icon=(.+)$/m.exec(desktop)?.[1];
+      if (iconName !== 'soapy-panels') fail('AppImage desktop icon must be soapy-panels');
+      const icon = fs.readFileSync(path.join(unpackedPath, `${iconName}.png`));
+      if (icon.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') fail('AppImage desktop icon is not a PNG');
+      if (!fs.statSync(path.join(unpackedPath, '.DirIcon')).size) fail('AppImage .DirIcon is missing');
+    } catch (error) { fail(`invalid AppImage desktop integration: ${error.message}`); }
+  }
+  try {
+    const { assertX64Elf } = require('../packaging/linux-artifact');
+    const executable = path.join(unpackedPath, 'soapy-panels');
+    fs.accessSync(executable, fs.constants.X_OK);
+    const fd = fs.openSync(executable, 'r');
+    const header = Buffer.alloc(20);
+    try { fs.readSync(fd, header, 0, header.length, 0); }
+    finally { fs.closeSync(fd); }
+    assertX64Elf(header);
+    const launcher = path.join(unpackedPath, 'AppRun');
+    fs.accessSync(launcher, fs.constants.X_OK);
+    if (fs.readFileSync(launcher, 'utf8') !== fs.readFileSync(path.join(root, 'packaging/linux/AppRun'), 'utf8')) {
+      fail('Linux launcher must preserve sandboxing and match packaging/linux/AppRun');
+    }
+    for (const name of ['LICENSE.electron.txt', 'LICENSES.chromium.html']) {
+      if (!fs.statSync(path.join(unpackedPath, name)).size) fail(`missing runtime license ${name}`);
+    }
+  } catch (error) {
+    fail(`invalid Linux executable or launcher: ${error.message}`);
+  }
   for (const externalPath of [storeBridgePath, storeLauncherPath]) {
     if (fs.existsSync(externalPath)) fail(`Linux package contains ${path.relative(resourcesPath, externalPath)}`);
   }

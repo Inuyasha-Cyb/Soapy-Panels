@@ -2,12 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const {
-  HELP_DOCS,
-  RENDERER_DIR,
-  isInside,
   resolveOpenSourceNoticesPath,
-  resolveRendererPath,
+  getHelpDocumentDescriptors,
 } = require("../shared/app-paths");
+const { openHelpDocument } = require("./help-documents");
 const { IPC_CHANNELS } = require("../shared/ipc-channels");
 const {
   APP_EDITIONS,
@@ -49,7 +47,6 @@ function windowFromEvent(event) {
 }
 
 const exportSaveTargets = createExportSaveTargetRegistry();
-const exportStreamSessions = createExportStreamSessionRegistry();
 
 function webContentsIdFromEvent(event) {
   const sender = event && event.sender;
@@ -66,12 +63,42 @@ function bufferFromIpcPayload(payload) {
 }
 
 function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
+  const exportStreamSessions = createExportStreamSessionRegistry({
+    stagingRoot: path.join(app.getPath("userData"), "export-staging"),
+    log: (message, code) => logMain(`${message}: ${code}`),
+  });
+  exportStreamSessions.initialize().catch(error => logMain(`Private export storage unavailable: ${error.code}`));
+  const observedExportSenders = new WeakSet();
+  function observeExportSender(sender) {
+    if (!sender || observedExportSenders.has(sender)) return;
+    observedExportSenders.add(sender);
+    const id = sender.id;
+    const clear = () => {
+      exportSaveTargets.clearForWebContents(id);
+      exportStreamSessions.clearForWebContents(id).catch(error => logMain(`Export cleanup deferred: ${error.code || "IO_ERROR"}`));
+    };
+    sender.once("destroyed", clear);
+    sender.on("render-process-gone", clear);
+    sender.on("did-start-navigation", (_event, _url, inPlace, mainFrame) => {
+      if (mainFrame && !inPlace) clear();
+    });
+  }
+
   const appEdition = options.appEdition || APP_EDITIONS.WINDOWS_STORE;
   const storePurchasesEnabled = appEdition === APP_EDITIONS.WINDOWS_STORE;
   const trustedIpc = createTrustedIpcRegistrar(ipcMain, trustedRendererRegistry, {
     onRejected({ channel, senderId }) {
       logMain(`rejected ipc channel=${channel} senderId=${senderId ?? "unknown"}`);
     },
+  });
+
+  const { createRecoveryStore } = require("./project-recovery-store");
+  const { registerRecoveryIpc } = require("./project-recovery-ipc");
+  const recoveryStore = createRecoveryStore(path.join(app.getPath("userData"), "project-recovery"));
+  registerRecoveryIpc(trustedIpc, recoveryStore);
+  trustedIpc.handle(IPC_CHANNELS.PROJECT_CLOSE_RESULT, (event, approved) => {
+    const win = windowFromEvent(event);
+    if (win && typeof win.finishProjectClose === "function") win.finishProjectClose(approved === true);
   });
 
   function stateFor(monetizationStatus) {
@@ -208,20 +235,12 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
         if (noticeResult) return { ok: false, error: noticeResult };
         return { ok: true };
       }
-      const relPath = HELP_DOCS[key];
-      if (!relPath) return { ok: false, error: "Unknown document." };
-
-      const resolvedPath = resolveRendererPath(relPath);
-      if (!resolvedPath || !isInside(RENDERER_DIR, resolvedPath)) {
-        return { ok: false, error: "Invalid document path." };
-      }
-      if (!fs.existsSync(resolvedPath)) {
-        return { ok: false, error: "Document not found." };
-      }
-
-      const result = await shell.openPath(resolvedPath);
-      if (result) return { ok: false, error: result };
-      return { ok: true };
+      return await openHelpDocument(key, {
+        edition: appEdition,
+        isPackaged: app.isPackaged,
+        resourcesPath: process.resourcesPath,
+        openPath: file => shell.openPath(file),
+      });
     } catch (err) {
       return { ok: false, error: String(err) };
     }
@@ -261,12 +280,7 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
     const filePath = automatic ? nextAvailableExportPath(selectedPath) : selectedPath;
     const webContentsId = webContentsIdFromEvent(event);
     const target = exportSaveTargets.add(filePath, webContentsId, { automatic });
-    if (event && event.sender && typeof event.sender.once === "function") {
-      event.sender.once("destroyed", () => {
-        exportSaveTargets.clearForWebContents(webContentsId);
-        exportStreamSessions.clearForWebContents(webContentsId).catch(function () {});
-      });
-    }
+    observeExportSender(event.sender);
     return {
       canceled: false,
       targetId: target.targetId,
@@ -305,6 +319,7 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
     try {
       const webContentsId = webContentsIdFromEvent(event);
       const target = exportSaveTargets.consume(targetId, webContentsId);
+      observeExportSender(event.sender);
       const result = await exportStreamSessions.begin(target, webContentsId);
       return { ok: true, sessionId: result.sessionId };
     } catch (err) {
@@ -363,6 +378,7 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
       ...stateFor(startupState.monetizationStatus),
       source: startupState && startupState.source ? startupState.source : "none",
       mainMetrics: metrics,
+      helpDocuments: getHelpDocumentDescriptors(appEdition),
     };
   });
   trustedIpc.handle(IPC_CHANNELS.GET_MONETIZATION_STATUS, async () => {
@@ -408,6 +424,10 @@ function registerIpcHandlers(assetStore, monetizationStore, options = {}) {
       ...stateFor(result && result.status ? result.status : null),
     };
   });
+  return {
+    dispose: () => Promise.all([exportStreamSessions.dispose(), recoveryStore.dispose()]),
+    cancelHelpers: () => exportStreamSessions.cancelHelpers(),
+  };
 }
 
 module.exports = {

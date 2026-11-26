@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import argparse
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -19,9 +20,13 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE_DIR = ROOT / "docs" / "legal"
 RUNTIME_DIR = ROOT / "app" / "renderer" / "docs" / "legal"
 OUTPUT_DIR = ROOT / "output" / "pdf"
-DOCUMENTS = (
+WINDOWS_DOCUMENTS = (
     ("Soapy_Panels_Privacy_Policy.md", "Soapy_Panels_Privacy_Policy.pdf"),
     ("Soapy_Panels_Terms_of_Service.md", "Soapy_Panels_Terms_of_Service.pdf"),
+)
+LINUX_DOCUMENTS = (
+    ("Soapy_Panels_Linux_Privacy_Notice.md", "Soapy_Panels_Linux_Privacy_Notice.pdf"),
+    ("Soapy_Panels_Linux_Terms_and_License.md", "Soapy_Panels_Linux_Terms_and_License.pdf"),
 )
 
 
@@ -151,13 +156,20 @@ def generate(source_name: str, output_name: str):
             title=title,
             author="Soapy Panels",
             subject="Soapy Panels legal information",
+            invariant=1,
         )
         document.build(markdown_story(markdown), onFirstPage=footer, onLaterPages=footer)
         print(f"Wrote {destination}")
 
 
 def main():
-    for source_name, output_name in DOCUMENTS:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--edition", choices=("linux-community", "windows-store", "all"), default="all")
+    args = parser.parse_args()
+    documents = (LINUX_DOCUMENTS if args.edition == "linux-community" else
+                 WINDOWS_DOCUMENTS if args.edition == "windows-store" else
+                 WINDOWS_DOCUMENTS + LINUX_DOCUMENTS)
+    for source_name, output_name in documents:
         generate(source_name, output_name)
 
 

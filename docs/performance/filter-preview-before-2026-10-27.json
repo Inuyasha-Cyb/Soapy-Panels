@@ -1,0 +1,451 @@
+{
+  "platform": "linux",
+  "cpu": "AMD Ryzen 5 2600 Six-Core Processor",
+  "memoryGiB": 15.55984115600586,
+  "appRoot": "/tmp/soapy-filter-reference",
+  "cases": [
+    {
+      "name": "1080p/grayscale",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 23,
+          "mean": 174.100000000002,
+          "p95": 233.59999999997672,
+          "max": 250.30000000004657
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"grayscale\",\"amount\":1,\"params\":{}}|video:1267",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/threshold",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 24,
+          "mean": 162.67499999999805,
+          "p95": 183.5,
+          "max": 183.5
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"threshold\",\"amount\":1,\"params\":{\"auto\":true,\"level\":0.5,\"softness\":0}}|video:1313",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/posterize",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 16,
+          "mean": 247.15000000000146,
+          "p95": 267,
+          "max": 267
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|video:1293",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/duotone",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 33,
+          "mean": 123.37272727272516,
+          "p95": 133.59999999997672,
+          "max": 133.59999999997672
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"duotone\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"highlight\":\"#ff2d55\",\"balance\":0.5}}|video:1576",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/gradientMap",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 27,
+          "mean": 151.39999999999742,
+          "p95": 166.90000000002328,
+          "max": 166.90000000002328
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"gradientMap\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|video:1658",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "1080p/slider-drag",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 27,
+          "mean": 148.92592592592592,
+          "p95": 167,
+          "max": 172.59999999997672
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "bench",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"gradientMap\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|video:1603",
+          "error": null
+        }
+      ],
+      "previewStatus": "Updating preview on canvas\u2026"
+    },
+    {
+      "name": "gif/grayscale",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.10499999999884,
+          "p95": 100.40000000002328,
+          "max": 100.40000000002328
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 0,
+          "quality": null,
+          "width": 640,
+          "frameCount": 6,
+          "pixels": 1382400,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"grayscale\",\"amount\":1,\"params\":{}}|gif:5",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/threshold",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.125,
+          "p95": 100.30000000004657,
+          "max": 100.30000000004657
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 0,
+          "quality": null,
+          "width": 640,
+          "frameCount": 6,
+          "pixels": 1382400,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"threshold\",\"amount\":1,\"params\":{\"auto\":true,\"level\":0.5,\"softness\":0}}|gif:2",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/posterize",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.12000000000117,
+          "p95": 100.30000000004657,
+          "max": 100.30000000004657
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 0,
+          "quality": null,
+          "width": 640,
+          "frameCount": 6,
+          "pixels": 1382400,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|gif:5",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/duotone",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.125,
+          "p95": 100.40000000002328,
+          "max": 100.40000000002328
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 0,
+          "quality": null,
+          "width": 640,
+          "frameCount": 6,
+          "pixels": 1382400,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"duotone\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"highlight\":\"#ff2d55\",\"balance\":0.5}}|gif:2",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "gif/gradientMap",
+      "seconds": 2,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 20,
+          "mean": 100.11500000000233,
+          "p95": 100.40000000002328,
+          "max": 106.09999999997672
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "gif",
+          "generation": 0,
+          "quality": null,
+          "width": 640,
+          "frameCount": 6,
+          "pixels": 1382400,
+          "active": false,
+          "pending": false,
+          "key": "{\"type\":\"gradientMap\",\"amount\":1,\"params\":{\"shadow\":\"#000000\",\"midtone\":\"#ff2d55\",\"highlight\":\"#ffffff\",\"midpoint\":0.5}}|gif:5",
+          "error": null
+        }
+      ],
+      "previewStatus": ""
+    },
+    {
+      "name": "4k/posterize",
+      "seconds": 4,
+      "metrics": {
+        "displayIntervalMs": {
+          "count": 17,
+          "mean": 234.57647058823804,
+          "p95": 283.70000000006985,
+          "max": 283.70000000006985
+        }
+      },
+      "queue": {
+        "active": 0,
+        "pending": 0,
+        "paused": false
+      },
+      "entries": [
+        {
+          "id": "large",
+          "generation": 0,
+          "quality": null,
+          "width": 1280,
+          "frameCount": 1,
+          "pixels": 921600,
+          "active": true,
+          "pending": true,
+          "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|video:1002",
+          "error": null
+        }
+      ],
+      "previewStatus": "Preview failed: Failed to execute 'createImageBitmap' on 'Window': The image source is not usable."
+    }
+  ],
+  "runtime": {
+    "electron": "43.1.1",
+    "chrome": "150.0.7871.114"
+  },
+  "display": {
+    "width": 1920,
+    "height": 1032,
+    "dpr": 1
+  },
+  "error": "page.waitForFunction: Timeout 30000ms exceeded.",
+  "failureState": {
+    "editor": {
+      "open": true,
+      "entryId": "large",
+      "compareOriginal": false,
+      "activeTool": null,
+      "selectedBgImageId": "large",
+      "zoom": 0.8,
+      "scrollLeft": 137,
+      "scrollTop": 84,
+      "asideCollapsed": false,
+      "asideWidth": 600,
+      "panelParentId": "asidePanel"
+    },
+    "entries": [
+      {
+        "id": "large",
+        "generation": 0,
+        "quality": null,
+        "width": 1280,
+        "frameCount": 1,
+        "pixels": 921600,
+        "active": true,
+        "pending": true,
+        "key": "{\"type\":\"posterize\",\"amount\":1,\"params\":{\"levels\":6,\"dither\":0}}|video:546",
+        "error": null
+      }
+    ],
+    "status": "\n          \n          Preview failed: Failed to execute 'createImageBitmap' on 'Window': The image source is not usable.\n        ",
+    "videos": [
+      {
+        "id": "large",
+        "mediaKind": "video",
+        "mimeType": "video/mp4",
+        "name": "Debug MP4",
+        "selected": true,
+        "hasRuntime": true,
+        "paused": false,
+        "muted": true,
+        "currentTime": 1.124081,
+        "duration": 2,
+        "readyState": 4,
+        "width": 3840,
+        "height": 2160
+      }
+    ]
+  },
+  "referenceMethod": "Pre-change playback/filter functions and worker modules from the recorded Git revision, inside the current app shell, with display-only instrumentation.",
+  "referenceRevision": "be73c3367d6c5b26cedc02a83b420c778c6e7f4d"
+}

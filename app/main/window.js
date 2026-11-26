@@ -1,4 +1,5 @@
-const { BrowserWindow } = require("electron");
+const { BrowserWindow, nativeImage } = require("electron");
+const path = require("node:path");
 const { PRELOAD_PATH, APP_ENTRY_URL } = require("../shared/app-paths");
 const { IPC_CHANNELS } = require("../shared/ipc-channels");
 const { CUSTOM_WINDOW_CHROME_ENABLED } = require("./config");
@@ -21,6 +22,11 @@ function createWindow(options = {}) {
   const startupMetrics = options.startupMetrics || null;
   if (startupMetrics) startupMetrics.mark("windowCreateStarted");
   const win = new BrowserWindow({
+    ...(process.platform === "linux" ? {
+      // A taskbar-sized bitmap also keeps the X11 icon property small.
+      icon: nativeImage.createFromPath(path.resolve(__dirname, "../../packaging/assets/icons/icon.png"))
+        .resize({ width: 128, height: 128 }),
+    } : {}),
     width: 1400,
     height: 900,
     backgroundColor: "#111827",
@@ -29,11 +35,46 @@ function createWindow(options = {}) {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      // Chromium otherwise downloads dictionaries on first launch. Keep the
+      // Linux Community editor offline, including on a fresh user profile.
+      spellcheck: options.appEdition !== "linux-community",
       preload: PRELOAD_PATH,
       backgroundThrottling: false,
     },
   });
   trustedRendererRegistry.registerWindow(win);
+  let closeApproved = false;
+  let closePromise = null;
+  let resolveClose = null;
+  win.requestProjectClose = () => {
+    if (closeApproved) return Promise.resolve(true);
+    if (win.webContents.isDestroyed() || win.webContents.isCrashed()) {
+      closeApproved = true;
+      win.close();
+      return Promise.resolve(true); // Keep recovery after renderer failure.
+    }
+    if (closePromise) return closePromise;
+    closePromise = new Promise(resolve => { resolveClose = resolve; });
+    win.webContents.send(IPC_CHANNELS.REQUEST_PROJECT_CLOSE);
+    return closePromise;
+  };
+  win.finishProjectClose = approved => {
+    const resolve = resolveClose;
+    resolveClose = null;
+    closePromise = null;
+    if (resolve) resolve(approved);
+    if (!approved) return;
+    closeApproved = true;
+    win.close();
+  };
+  win.on("close", event => {
+    if (closeApproved || win.webContents.isDestroyed() || win.webContents.isCrashed()) return;
+    event.preventDefault();
+    void win.requestProjectClose();
+  });
+  win.webContents.on("render-process-gone", () => {
+    if (resolveClose) { resolveClose(false); resolveClose = null; closePromise = null; }
+  });
   if (startupMetrics) startupMetrics.mark("windowCreated");
 
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));

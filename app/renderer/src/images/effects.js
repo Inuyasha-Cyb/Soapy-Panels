@@ -1,5 +1,5 @@
 (function (root, factory) {
-  var api = factory();
+  const api = factory();
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
     return;
@@ -16,7 +16,7 @@
   function () {
     "use strict";
 
-    var EFFECT_TYPES = [
+    const EFFECT_TYPES = [
       "grayscale",
       "threshold",
       "posterize",
@@ -24,12 +24,12 @@
       "gradientMap",
     ];
 
-    var SRGB_TO_LINEAR = new Float64Array(256);
-    for (var lutIndex = 0; lutIndex < 256; lutIndex++) {
+    const SRGB_TO_LINEAR = new Float64Array(256);
+    for (let lutIndex = 0; lutIndex < 256; lutIndex++) {
       SRGB_TO_LINEAR[lutIndex] = srgbUnitToLinear(lutIndex / 255);
     }
 
-    var BAYER_4X4 = [
+    const BAYER_4X4 = [
       0, 8, 2, 10,
       12, 4, 14, 6,
       3, 11, 1, 9,
@@ -49,14 +49,14 @@
       ) {
         return fallback;
       }
-      var numeric = Number(value);
+      const numeric = Number(value);
       return isFinite(numeric) ? numeric : fallback;
     }
 
     function normalizeHexColor(value, fallback) {
-      var fallbackValue = typeof fallback === "string" ? fallback.toLowerCase() : "#000000";
+      const fallbackValue = typeof fallback === "string" ? fallback.toLowerCase() : "#000000";
       if (typeof value !== "string") return fallbackValue;
-      var raw = value.trim().toLowerCase();
+      const raw = value.trim().toLowerCase();
       if (/^#[0-9a-f]{6}$/.test(raw)) return raw;
       if (/^#[0-9a-f]{3}$/.test(raw)) {
         return (
@@ -115,11 +115,11 @@
 
     function normalizeEffect(value) {
       if (!value || typeof value !== "object") return null;
-      var type = EFFECT_TYPES.indexOf(value.type) !== -1 ? value.type : null;
+      const type = EFFECT_TYPES.indexOf(value.type) !== -1 ? value.type : null;
       if (!type) return null;
-      var normalized = defaultsForType(type);
+      const normalized = defaultsForType(type);
       normalized.amount = clamp(finiteOr(value.amount, 1), 0, 1);
-      var params = value.params && typeof value.params === "object" ? value.params : {};
+      const params = value.params && typeof value.params === "object" ? value.params : {};
 
       if (type === "threshold") {
         normalized.params.auto = params.auto !== false;
@@ -143,17 +143,17 @@
     }
 
     function effectSignature(value) {
-      var normalized = normalizeEffect(value);
+      const normalized = normalizeEffect(value);
       return normalized ? JSON.stringify(normalized) : "none";
     }
 
     function srgbUnitToLinear(value) {
-      var v = clamp(value, 0, 1);
+      const v = clamp(value, 0, 1);
       return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
     }
 
     function linearToSrgbUnit(value) {
-      var v = clamp(value, 0, 1);
+      const v = clamp(value, 0, 1);
       return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
     }
 
@@ -162,17 +162,17 @@
     }
 
     function perceptualLuminanceFromLinear(r, g, b) {
-      var y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
       return clamp(linearToSrgbUnit(y), 0, 1);
     }
 
     function linearRgbToOklab(r, g, b) {
-      var l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
-      var m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
-      var s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
-      var lRoot = Math.cbrt(Math.max(0, l));
-      var mRoot = Math.cbrt(Math.max(0, m));
-      var sRoot = Math.cbrt(Math.max(0, s));
+      const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+      const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+      const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+      const lRoot = Math.cbrt(Math.max(0, l));
+      const mRoot = Math.cbrt(Math.max(0, m));
+      const sRoot = Math.cbrt(Math.max(0, s));
       return {
         l: 0.2104542553 * lRoot + 0.793617785 * mRoot - 0.0040720468 * sRoot,
         a: 1.9779984951 * lRoot - 2.428592205 * mRoot + 0.4505937099 * sRoot,
@@ -181,12 +181,12 @@
     }
 
     function oklabToLinearRgb(l, a, b) {
-      var lRoot = l + 0.3963377774 * a + 0.2158037573 * b;
-      var mRoot = l - 0.1055613458 * a - 0.0638541728 * b;
-      var sRoot = l - 0.0894841775 * a - 1.291485548 * b;
-      var lValue = lRoot * lRoot * lRoot;
-      var mValue = mRoot * mRoot * mRoot;
-      var sValue = sRoot * sRoot * sRoot;
+      const lRoot = l + 0.3963377774 * a + 0.2158037573 * b;
+      const mRoot = l - 0.1055613458 * a - 0.0638541728 * b;
+      const sRoot = l - 0.0894841775 * a - 1.291485548 * b;
+      const lValue = lRoot * lRoot * lRoot;
+      const mValue = mRoot * mRoot * mRoot;
+      const sValue = sRoot * sRoot * sRoot;
       return {
         r: clamp(4.0767416621 * lValue - 3.3077115913 * mValue + 0.2309699292 * sValue, 0, 1),
         g: clamp(-1.2684380046 * lValue + 2.6097574011 * mValue - 0.3413193965 * sValue, 0, 1),
@@ -195,15 +195,15 @@
     }
 
     function hexToOklab(value) {
-      var hex = normalizeHexColor(value, "#000000");
-      var r = parseInt(hex.slice(1, 3), 16);
-      var g = parseInt(hex.slice(3, 5), 16);
-      var b = parseInt(hex.slice(5, 7), 16);
+      const hex = normalizeHexColor(value, "#000000");
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
       return linearRgbToOklab(SRGB_TO_LINEAR[r], SRGB_TO_LINEAR[g], SRGB_TO_LINEAR[b]);
     }
 
     function mixOklab(left, right, t) {
-      var amount = clamp(t, 0, 1);
+      const amount = clamp(t, 0, 1);
       return oklabToLinearRgb(
         left.l + (right.l - left.l) * amount,
         left.a + (right.a - left.a) * amount,
@@ -212,18 +212,18 @@
     }
 
     function buildGradientLut(effect) {
-      var params = effect.params;
-      var lut = new Array(256);
-      var shadow = hexToOklab(params.shadow);
-      var highlight = hexToOklab(params.highlight);
+      const params = effect.params;
+      const lut = new Array(256);
+      const shadow = hexToOklab(params.shadow);
+      const highlight = hexToOklab(params.highlight);
       if (effect.type === "duotone") {
-        var balance = params.balance;
-        var gamma = balance > 0 && balance < 1
+        const balance = params.balance;
+        const gamma = balance > 0 && balance < 1
           ? Math.log(0.5) / Math.log(balance)
           : 1;
-        for (var i = 0; i < 256; i++) {
-          var q = i / 255;
-          var mappedAmount = balance <= 0
+        for (let i = 0; i < 256; i++) {
+          const q = i / 255;
+          const mappedAmount = balance <= 0
             ? (q <= 0 ? 0 : 1)
             : balance >= 1
               ? (q >= 1 ? 1 : 0)
@@ -233,10 +233,10 @@
         return lut;
       }
 
-      var midtone = hexToOklab(params.midtone);
-      var midpoint = params.midpoint;
-      for (var j = 0; j < 256; j++) {
-        var value = j / 255;
+      const midtone = hexToOklab(params.midtone);
+      const midpoint = params.midpoint;
+      for (let j = 0; j < 256; j++) {
+        const value = j / 255;
         if (value <= midpoint) {
           lut[j] = mixOklab(shadow, midtone, value / midpoint);
         } else {
@@ -247,38 +247,38 @@
     }
 
     function computeOtsuThreshold(data) {
-      var histogram = new Float64Array(256);
-      var totalWeight = 0;
-      var weightedSum = 0;
-      for (var i = 0; i < data.length; i += 4) {
-        var alphaWeight = data[i + 3] / 255;
+      const histogram = new Float64Array(256);
+      let totalWeight = 0;
+      let weightedSum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const alphaWeight = data[i + 3] / 255;
         if (!(alphaWeight > 0)) continue;
-        var luminance = perceptualLuminanceFromLinear(
+        const luminance = perceptualLuminanceFromLinear(
           SRGB_TO_LINEAR[data[i]],
           SRGB_TO_LINEAR[data[i + 1]],
           SRGB_TO_LINEAR[data[i + 2]],
         );
-        var bucket = Math.round(luminance * 255);
+        const bucket = Math.round(luminance * 255);
         histogram[bucket] += alphaWeight;
         totalWeight += alphaWeight;
         weightedSum += bucket * alphaWeight;
       }
       if (!(totalWeight > 0)) return 0.5;
 
-      var backgroundWeight = 0;
-      var backgroundSum = 0;
-      var bestVariance = -1;
-      var bestThreshold = 128;
-      for (var t = 0; t < 256; t++) {
+      let backgroundWeight = 0;
+      let backgroundSum = 0;
+      let bestVariance = -1;
+      let bestThreshold = 128;
+      for (let t = 0; t < 256; t++) {
         backgroundWeight += histogram[t];
         if (!(backgroundWeight > 0)) continue;
-        var foregroundWeight = totalWeight - backgroundWeight;
+        const foregroundWeight = totalWeight - backgroundWeight;
         if (!(foregroundWeight > 0)) break;
         backgroundSum += t * histogram[t];
-        var backgroundMean = backgroundSum / backgroundWeight;
-        var foregroundMean = (weightedSum - backgroundSum) / foregroundWeight;
-        var delta = backgroundMean - foregroundMean;
-        var variance = backgroundWeight * foregroundWeight * delta * delta;
+        const backgroundMean = backgroundSum / backgroundWeight;
+        const foregroundMean = (weightedSum - backgroundSum) / foregroundWeight;
+        const delta = backgroundMean - foregroundMean;
+        const variance = backgroundWeight * foregroundWeight * delta * delta;
         if (variance > bestVariance) {
           bestVariance = variance;
           bestThreshold = t;
@@ -289,7 +289,7 @@
 
     function smoothstep(edge0, edge1, value) {
       if (edge0 === edge1) return value >= edge1 ? 1 : 0;
-      var t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+      const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
       return t * t * (3 - 2 * t);
     }
 
@@ -297,66 +297,77 @@
       return original + (target - original) * amount;
     }
 
+    // Small bounded cache: slider drags must not retain every historical palette.
+    const gradientCache = new Map();
+    function cachedGradientLut(effect) {
+      const key = JSON.stringify([effect.type, effect.params]);
+      if (gradientCache.has(key)) return gradientCache.get(key);
+      const lut = buildGradientLut(effect);
+      gradientCache.set(key, lut);
+      if (gradientCache.size > 16) gradientCache.delete(gradientCache.keys().next().value);
+      return lut;
+    }
+
     function processImageData(imageData, value) {
       if (!imageData || !imageData.data) return imageData;
-      var effect = normalizeEffect(value);
+      const effect = normalizeEffect(value);
       if (!effect || effect.amount <= 0) return imageData;
 
-      var data = imageData.data;
-      var width = Math.max(1, Number(imageData.width) || 1);
-      var amount = effect.amount;
-      var gradientLut =
+      const data = imageData.data;
+      const width = Math.max(1, Number(imageData.width) || 1);
+      const amount = effect.amount;
+      const gradientLut =
         effect.type === "duotone" || effect.type === "gradientMap"
-          ? buildGradientLut(effect)
+          ? cachedGradientLut(effect)
           : null;
-      var threshold =
+      const threshold =
         effect.type === "threshold" && effect.params.auto
           ? computeOtsuThreshold(data)
           : effect.type === "threshold"
             ? effect.params.level
             : 0.5;
 
-      for (var i = 0; i < data.length; i += 4) {
+      for (let i = 0; i < data.length; i += 4) {
         if (data[i + 3] === 0) continue;
-        var originalR = SRGB_TO_LINEAR[data[i]];
-        var originalG = SRGB_TO_LINEAR[data[i + 1]];
-        var originalB = SRGB_TO_LINEAR[data[i + 2]];
-        var luminance = perceptualLuminanceFromLinear(originalR, originalG, originalB);
-        var targetR = originalR;
-        var targetG = originalG;
-        var targetB = originalB;
+        const originalR = SRGB_TO_LINEAR[data[i]];
+        const originalG = SRGB_TO_LINEAR[data[i + 1]];
+        const originalB = SRGB_TO_LINEAR[data[i + 2]];
+        const luminance = perceptualLuminanceFromLinear(originalR, originalG, originalB);
+        let targetR = originalR;
+        let targetG = originalG;
+        let targetB = originalB;
 
         if (effect.type === "grayscale") {
-          var grayLinear = srgbUnitToLinear(luminance);
+          const grayLinear = srgbUnitToLinear(luminance);
           targetR = grayLinear;
           targetG = grayLinear;
           targetB = grayLinear;
         } else if (effect.type === "threshold") {
-          var softness = effect.params.softness;
-          var bw = softness > 0
+          const softness = effect.params.softness;
+          const bw = softness > 0
             ? smoothstep(threshold - softness / 2, threshold + softness / 2, luminance)
             : luminance > threshold
               ? 1
               : 0;
-          var bwLinear = srgbUnitToLinear(bw);
+          const bwLinear = srgbUnitToLinear(bw);
           targetR = bwLinear;
           targetG = bwLinear;
           targetB = bwLinear;
         } else if (effect.type === "posterize") {
-          var lab = linearRgbToOklab(originalR, originalG, originalB);
-          var levels = effect.params.levels;
-          var pixelIndex = i / 4;
-          var x = pixelIndex % width;
-          var y = Math.floor(pixelIndex / width);
-          var bayer = (BAYER_4X4[(y % 4) * 4 + (x % 4)] + 0.5) / 16 - 0.5;
-          var shifted = clamp(lab.l + bayer * effect.params.dither / Math.max(1, levels - 1), 0, 1);
-          var quantized = Math.round(shifted * (levels - 1)) / (levels - 1);
-          var posterized = oklabToLinearRgb(quantized, lab.a, lab.b);
+          const lab = linearRgbToOklab(originalR, originalG, originalB);
+          const levels = effect.params.levels;
+          const pixelIndex = i / 4;
+          const x = pixelIndex % width;
+          const y = Math.floor(pixelIndex / width);
+          const bayer = (BAYER_4X4[(y % 4) * 4 + (x % 4)] + 0.5) / 16 - 0.5;
+          const shifted = clamp(lab.l + bayer * effect.params.dither / Math.max(1, levels - 1), 0, 1);
+          const quantized = Math.round(shifted * (levels - 1)) / (levels - 1);
+          const posterized = oklabToLinearRgb(quantized, lab.a, lab.b);
           targetR = posterized.r;
           targetG = posterized.g;
           targetB = posterized.b;
         } else if (gradientLut) {
-          var mapped = gradientLut[Math.round(luminance * 255)];
+          const mapped = gradientLut[Math.round(luminance * 255)];
           targetR = mapped.r;
           targetG = mapped.g;
           targetB = mapped.b;

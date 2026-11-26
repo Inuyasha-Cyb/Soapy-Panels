@@ -1,10 +1,13 @@
 {
   "extends": "./packaging/electron-builder.base.json",
   "extraMetadata": {
-    "soapyEdition": "linux-community"
+    "soapyEdition": "linux-community",
+    "desktopName": "com.soapy.panels.desktop"
   },
   "files": [
     "app/**/*",
+    "!app/renderer/docs/legal/Soapy_Panels_Privacy_Policy.pdf",
+    "!app/renderer/docs/legal/Soapy_Panels_Terms_of_Service.pdf",
     "!app/main/monetization-store.js",
     "!app/main/windows-store-bridge.js",
     "!app/shared/monetization-status.js",
@@ -20,14 +23,23 @@
       "to": "legal/OPEN_SOURCE_NOTICES.txt"
     }
   ],
+  "extraFiles": [
+    { "from": "packaging/linux/AppRun", "to": "AppRun" }
+  ],
+  "appImage": {
+    "executableArgs": []
+  },
   "directories": {
     "output": "dist/linux",
     "buildResources": "out/packaging"
   },
   "linux": {
+    "syncDesktopName": true,
+    "desktop": { "entry": { "StartupWMClass": "com.soapy.panels" } },
     "target": [
-      "AppImage"
+      { "target": "AppImage", "arch": ["x64"] }
     ],
+    "artifactName": "Soapy.Panels-${version}-x64.${ext}",
     "icon": "packaging/assets/icons/icon.png",
     "category": "Graphics"
   }

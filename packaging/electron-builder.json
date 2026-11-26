@@ -3,6 +3,12 @@
   "extraMetadata": {
     "soapyEdition": "windows-store"
   },
+  "files": [
+    "app/**/*",
+    "!app/renderer/docs/legal/Soapy_Panels_Linux_*.pdf",
+    "packaging/assets/icons/*",
+    "packaging/THIRD_PARTY_NOTICES.txt"
+  ],
   "extraResources": [
     {
       "from": "out/store-bridge",

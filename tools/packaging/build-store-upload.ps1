@@ -70,6 +70,17 @@ function Invoke-StagedAppxFallback {
   return Get-Item -LiteralPath $fallbackPackagePath
 }
 
+Push-Location $root
+try {
+  Write-Output "Auditing runtime and build dependencies..."
+  & npm.cmd run audit:security
+  if ($LASTEXITCODE -ne 0) {
+    throw "Dependency security audit failed with exit code $LASTEXITCODE. Store packaging stopped before cleaning or building output."
+  }
+} finally {
+  Pop-Location
+}
+
 Write-Output "Cleaning generated Store package output..."
 if (Test-Path $distPath) {
   Remove-Item -Recurse -Force $distPath

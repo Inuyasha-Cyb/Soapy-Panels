@@ -1,0 +1,61 @@
+.linux-color-picker[hidden] { display: none !important; }
+.linux-color-picker {
+  position: fixed; inset: 0; z-index: 2147483000;
+  background: transparent;
+}
+.linux-color-picker section {
+  position: absolute;
+  width: min(340px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  padding: 20px; border-radius: 12px; border: 1px solid var(--border, #657080);
+  color: var(--ink, #e5e7eb); background: var(--panel, #1f2937);
+  box-shadow: 0 12px 48px #0006; display: grid; gap: 12px;
+}
+.linux-color-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.linux-color-picker [data-color-close] { font-size: 22px; line-height: 1; }
+.linux-color-picker [data-color-pick] { width: 36px; height: 36px; padding: 6px; }
+.linux-color-picker [data-color-pick] svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.linux-color-picker [data-color-hue] {
+  appearance: none; height: 12px; margin-block: 6px; border-radius: 6px; cursor: pointer;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+.linux-color-picker [data-color-hue]::-webkit-slider-runnable-track {
+  height: 12px; border-radius: 6px;
+  background: transparent;
+}
+.linux-color-picker [data-color-hue]::-webkit-slider-thumb {
+  appearance: none; width: 20px; height: 20px; margin-top: -4px; border-radius: 50%;
+  background: var(--selected-hue, #f00); border: 2px solid white; box-shadow: 0 0 0 1px #111;
+}
+.linux-color-picker h2 { font-size: 1.1rem; margin: 0; }
+.linux-color-picker label { display: flex; align-items: center; gap: 8px; }
+.linux-color-picker input { min-width: 0; flex: 1; width: 100%; }
+.linux-color-picker input[type="text"], .linux-color-picker input[type="number"] {
+  background: var(--bg, #111827); color: inherit; border: 1px solid var(--border, #657080); border-radius: 4px; padding: 6px;
+}
+.linux-color-picker [aria-invalid="true"] { outline: 2px solid #ef4444; }
+.linux-color-picker button { padding: 8px 12px; border-radius: 6px; }
+.linux-color-picker :focus-visible { outline: 2px solid var(--accent, #60a5fa); outline-offset: 2px; }
+.linux-color-area {
+  position: relative; height: 155px; touch-action: none; cursor: crosshair;
+  background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+}
+.linux-color-area span { position: absolute; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px #000; pointer-events: none; }
+.linux-color-previews, .linux-color-rgb, .linux-color-actions { display: flex; gap: 12px; }
+.linux-color-previews label { flex: 1; flex-direction: column; }
+.linux-color-previews i { display: block; height: 24px; width: 100%; border: 1px solid var(--border, #657080); }
+.linux-color-rgb label { min-width: 0; flex: 1; }
+.linux-color-actions { justify-content: flex-end; }
+.linux-color-picker [data-color-message] { margin: 0; font-size: .85rem; }
+.linux-color-picker [data-color-message]:empty { display: none; }
+.color-picker-sampling-host { visibility: hidden !important; pointer-events: none !important; }
+.canvas-color-magnifier[hidden] { display: none !important; }
+.canvas-color-magnifier {
+  position: fixed; z-index: 2147483100; pointer-events: none;
+  padding: 6px; border: 1px solid #888; border-radius: 8px;
+  background: #fff; color: #111; box-shadow: 0 3px 14px #0006;
+}
+.color-magnifier-grid { position: relative; width: 110px; height: 110px; }
+.color-magnifier-grid canvas { width: 110px; height: 110px; image-rendering: pixelated; display: block; }
+.color-magnifier-grid i { position: absolute; left: 50px; top: 50px; width: 10px; height: 10px; box-sizing: border-box; border: 1px solid white; outline: 1px solid black; }
+.color-magnifier-value { display: flex; align-items: center; gap: 6px; margin-top: 6px; font: 12px monospace; }
+.color-magnifier-value b { width: 16px; height: 16px; border: 1px solid #888; }

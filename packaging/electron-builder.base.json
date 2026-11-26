@@ -1,6 +1,7 @@
 {
   "appId": "com.soapy.panels",
   "productName": "Soapy Panels",
+  "afterPack": "tools/packaging/copy-legal-documents.js",
   "files": [
     "app/**/*",
     "packaging/assets/icons/*",

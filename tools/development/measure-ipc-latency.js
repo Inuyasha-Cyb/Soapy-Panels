@@ -24,10 +24,12 @@ async function main() {
 
   fs.rmSync(profileDir, { recursive: true, force: true });
   fs.mkdirSync(profileDir, { recursive: true });
+  const launchEnvironment = { ...process.env, SOAPY_LOG_MAIN: "0" };
+  delete launchEnvironment.ELECTRON_RUN_AS_NODE;
   const electronApp = await playwrightElectron.launch({
     args: [".", `--user-data-dir=${profileDir}`],
     cwd: repoRoot,
-    env: { ...process.env, SOAPY_LOG_MAIN: "0" },
+    env: launchEnvironment,
   });
 
   try {

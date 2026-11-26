@@ -12,6 +12,24 @@ const HELP_DOCS = Object.freeze({
   privacy: path.join("docs", "legal", "Soapy_Panels_Privacy_Policy.pdf"),
   terms: path.join("docs", "legal", "Soapy_Panels_Terms_of_Service.pdf"),
 });
+const LINUX_HELP_DOCS = Object.freeze({
+  privacy: path.join("docs", "legal", "Soapy_Panels_Linux_Privacy_Notice.pdf"),
+  terms: path.join("docs", "legal", "Soapy_Panels_Linux_Terms_and_License.pdf"),
+});
+
+function getHelpDocuments(edition) {
+  if (edition === "linux-community") return LINUX_HELP_DOCS;
+  if (edition === "windows-store") return HELP_DOCS;
+  throw new Error(`Unknown legal document edition: ${edition}`);
+}
+
+function getHelpDocumentDescriptors(edition) {
+  return Object.fromEntries(Object.entries(getHelpDocuments(edition)).map(([id, relative]) => [id, {
+    id,
+    fileName: relative.split(path.sep).join("/").replace(/^docs\//, ""),
+    titleKey: id === "terms" && edition === "linux-community" ? "help.termsAndLicense" : `help.${id}`,
+  }]));
+}
 
 function isInside(basePath, candidatePath) {
   const base = path.resolve(basePath);
@@ -33,6 +51,17 @@ function resolveOpenSourceNoticesPath(options = {}) {
   return path.join(PROJECT_ROOT, "packaging", OPEN_SOURCE_NOTICES_FILE);
 }
 
+function resolveHelpDocumentPath(docId, options = {}) {
+  const documents = getHelpDocuments(options.edition);
+  if (typeof docId !== "string" || !Object.hasOwn(documents, docId)) return null;
+  const relativePath = documents[docId];
+  if (options.isPackaged) {
+    if (!options.resourcesPath || !path.isAbsolute(options.resourcesPath)) return null;
+    return path.join(options.resourcesPath, "legal", path.basename(relativePath));
+  }
+  return resolveRendererPath(relativePath);
+}
+
 module.exports = {
   APP_DIR,
   RENDERER_DIR,
@@ -40,8 +69,12 @@ module.exports = {
   RENDERER_ENTRY,
   APP_ENTRY_URL,
   HELP_DOCS,
+  LINUX_HELP_DOCS,
+  getHelpDocuments,
+  getHelpDocumentDescriptors,
   OPEN_SOURCE_NOTICES_FILE,
   isInside,
   resolveRendererPath,
   resolveOpenSourceNoticesPath,
+  resolveHelpDocumentPath,
 };

@@ -130,9 +130,12 @@ function writeCache(cachePath, status) {
   }
 }
 
-function loadNativeStoreBridge() {
+function loadNativeStoreBridge(options) {
   try {
-    return require("./windows-store-bridge");
+    return require("./windows-store-bridge").createWindowsStoreBridge({
+      isPackaged: options.isPackaged,
+      resourcesPath: options.resourcesPath,
+    });
   } catch {
     return null;
   }
@@ -196,7 +199,7 @@ function createMonetizationStore(options = {}) {
     ? path.join(options.userDataPath, CACHE_FILE)
     : null;
   const simulatedStatus = developmentStatus(options.developmentEntitlement);
-  const bridge = simulatedStatus ? null : options.bridge || loadNativeStoreBridge();
+  const bridge = simulatedStatus ? null : options.bridge || loadNativeStoreBridge(options);
 
   function getStartupState() {
     if (simulatedStatus) {

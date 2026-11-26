@@ -1,9 +1,9 @@
 var exports = {};
 
-importScripts("../../vendor/omggif/omggif.js");
+importScripts('gif-resource-policy.js', '../../vendor/omggif/omggif.js');
 
 var GifReaderCtor =
-  (typeof GifReader !== "undefined" && GifReader) ||
+  (typeof GifReader !== 'undefined' && GifReader) ||
   (exports && exports.GifReader);
 
 var DEFAULT_FRAME_DELAY_MS = 100;
@@ -31,19 +31,20 @@ function clearRectRgba(pixels, canvasWidth, x, y, width, height) {
 }
 
 function decodeGif(arrayBuffer, options) {
-  if (!GifReaderCtor) throw new Error("GIF decoder did not load.");
-  var opts = options || {};
-  var maxFrames = Math.max(1, Math.floor(Number(opts.maxFrames) || 300));
-  var maxDurationMs = Math.max(0, Math.floor(Number(opts.maxDurationMs) || 30000));
+  if (!GifReaderCtor) throw new Error('GIF decoder did not load.');
+  var inspected = self.SoapyGifPolicy.inspect(arrayBuffer, options);
+  var maxFrames = inspected.options.maxFrames;
+  var maxDurationMs = inspected.options.maxDurationMs;
   var reader = new GifReaderCtor(new Uint8Array(arrayBuffer));
   var width = reader.width || 0;
   var height = reader.height || 0;
   var sourceFrameCount = reader.numFrames();
   if (!(width > 0) || !(height > 0) || !(sourceFrameCount > 0)) {
-    throw new Error("Invalid GIF dimensions.");
+    throw new Error('Invalid GIF dimensions.');
   }
 
   var screen = new Uint8ClampedArray(width * height * 4);
+  var restoreBuffer = null;
   var frames = [];
   var transfers = [];
   var durationMs = 0;
@@ -61,7 +62,12 @@ function decodeGif(arrayBuffer, options) {
 
     var info = reader.frameInfo(frameIndex);
     var disposal = info && isFinite(info.disposal) ? info.disposal : 0;
-    var restorePrevious = disposal === 3 ? new Uint8ClampedArray(screen) : null;
+    var restorePrevious = null;
+    if (disposal === 3) {
+      if (!restoreBuffer) restoreBuffer = new Uint8ClampedArray(screen.length);
+      restoreBuffer.set(screen);
+      restorePrevious = restoreBuffer;
+    }
 
     reader.decodeAndBlitFrameRGBA(frameIndex, screen);
 
@@ -89,7 +95,8 @@ function decodeGif(arrayBuffer, options) {
     frameCount: frames.length,
     sourceFrameCount: sourceFrameCount,
     durationMs: durationMs,
-    loopCount: typeof reader.loopCount === "function" ? reader.loopCount() : null,
+    loopCount:
+      typeof reader.loopCount === 'function' ? reader.loopCount() : null,
     truncated: truncated,
     transfers: transfers,
   };
@@ -97,7 +104,7 @@ function decodeGif(arrayBuffer, options) {
 
 self.onmessage = function (event) {
   var data = event && event.data ? event.data : {};
-  if (data.type !== "decode") return;
+  if (data.type !== 'decode') return;
   try {
     var decoded = decodeGif(data.arrayBuffer, data.options || {});
     var transfers = decoded.transfers || [];
@@ -106,6 +113,7 @@ self.onmessage = function (event) {
   } catch (error) {
     self.postMessage({
       ok: false,
+      code: (error && error.code) || 'GIF_INVALID',
       error: error && error.message ? error.message : String(error),
     });
   }

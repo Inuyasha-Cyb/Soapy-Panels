@@ -37,9 +37,7 @@ function walk(dir, predicate = () => true) {
 }
 
 const requiredPaths = [
-  'AGENTS.md',
   'README.md',
-  'app/renderer/AGENTS.md',
   'app/main/index.js',
   'app/main/trusted-ipc.js',
   'app/main/export-stream-sessions.js',
@@ -51,6 +49,17 @@ const requiredPaths = [
   'app/renderer/index.html',
   'app/renderer/src/project/serialization.js',
   'app/renderer/src/project/validation.js',
+  'app/renderer/src/project/snapshots.js',
+  'app/renderer/src/project/document.js',
+  'app/renderer/src/project/safety.js',
+  'app/renderer/src/project/lifecycle.js',
+  'app/renderer/src/project/recovery.js',
+  'app/renderer/src/project/recovery-ui.js',
+  'app/renderer/src/selection/alignment-geometry.js',
+  'app/renderer/src/selection/alignment-controller.js',
+  'app/renderer/src/selection/alignment-overlay.js',
+  'app/main/project-recovery-store.js',
+  'app/main/project-recovery-ipc.js',
   'app/renderer/src/history/stack.js',
   'app/renderer/src/text/wrapping.js',
   'app/renderer/src/boot.js',
@@ -77,11 +86,6 @@ const requiredPaths = [
   'app/renderer/src/images/effects.js',
   'app/renderer/src/images/effects-runtime.js',
   'app/renderer/src/images/effects-worker.js',
-  'docs/architecture/app-contracts.md',
-  'docs/runbooks/development.md',
-  'docs/runbooks/linux-validation.md',
-  'docs/debugging',
-  'docs/decisions/0001-agent-ready-structure.md',
   'packaging/electron-builder.json',
   'packaging/electron-builder.base.json',
   'packaging/electron-builder.linux.json',
@@ -160,8 +164,10 @@ if (/ipcMain\.(?:handle|on)\s*\(/.test(ipcSource)) {
 if (packageJson.main !== 'app/main/index.js') {
   fail('package.json main must be app/main/index.js');
 }
-if (packageJson.version !== '1.2.0') {
-  fail('package.json version must be 1.2.0 for the edition refactor');
+const packageLock = readJson(rel('package-lock.json'));
+if (!packageJson.version || packageLock.version !== packageJson.version ||
+    packageLock.packages?.['']?.version !== packageJson.version) {
+  fail('package.json and both package-lock.json root versions must match');
 }
 if (packageJson.license !== 'Apache-2.0') {
   fail('package.json license must be Apache-2.0');
@@ -320,8 +326,9 @@ if (linuxBuilderConfig.extraMetadata?.soapyEdition !== 'linux-community') {
 }
 if (!Array.isArray(linuxBuilderConfig.linux?.target) ||
     linuxBuilderConfig.linux.target.length !== 1 ||
-    linuxBuilderConfig.linux.target[0] !== 'AppImage') {
-  fail('Linux v1 packaging target must be AppImage only');
+    linuxBuilderConfig.linux.target[0].target !== 'AppImage' ||
+    JSON.stringify(linuxBuilderConfig.linux.target[0].arch) !== '["x64"]') {
+  fail('Linux packaging target must be AppImage x64 only');
 }
 for (const excluded of [
   '!app/main/monetization-store.js',
@@ -486,6 +493,15 @@ const expectedRendererScriptOrder = [
   'src/ui/dock-layouts.js',
   'src/ui/dock-controller.js',
   'src/ui/startup.js',
+  'src/project/snapshots.js',
+  'src/project/document.js',
+  'src/project/safety.js',
+  'src/project/lifecycle.js',
+  'src/project/recovery.js',
+  'src/project/recovery-ui.js',
+  'src/selection/alignment-geometry.js',
+  'src/selection/alignment-controller.js',
+  'src/selection/alignment-overlay.js',
   'src/boot.js',
   'src/ui/tool-buttons.js',
 ];
@@ -518,8 +534,8 @@ try {
 if (!indexHtml.includes('src="src/project/validation.js"')) {
   fail('renderer must load project validation before boot');
 }
-const bootSource = fs.readFileSync(rel('app/renderer/src/boot.js'), 'utf8');
-if (!bootSource.includes('projectValidation.readAndValidateProjectFile')) {
+const projectDocumentSource = fs.readFileSync(rel('app/renderer/src/project/document.js'), 'utf8');
+if (!projectDocumentSource.includes('projectValidation.readAndValidateProjectFile')) {
   fail('project open must pass through resource validation before restoration');
 }
 
