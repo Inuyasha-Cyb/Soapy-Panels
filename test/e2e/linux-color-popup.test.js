@@ -88,14 +88,22 @@ test('Linux color popup updates live, samples, cancels sampling and recovers wit
     await page.evaluate(() => window.SoapyPanels.debug.video.setCanvasBackground('#ff0000', 0));
     await bg.evaluate(el => el.click());
     await pick.click();
-    const transparentBox = await page.locator('#stage').boundingBox();
-    const x = Math.floor(transparentBox.x + transparentBox.width / 2);
-    const y = Math.floor(transparentBox.y + transparentBox.height / 2);
+    // Compare the same settled checkerboard state before and after the click.
+    // Sampling its fade or an antialiased tile boundary compares different colors.
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('#canvasChecker'), '::before').opacity === '1');
+    const { x, y } = await page.evaluate(() => {
+      const rect = document.querySelector('#stage').getBoundingClientRect();
+      const bg = window.SoapyPanels.debug.video.takeProjectSnapshot().bg;
+      const halfTile = parseFloat(getComputedStyle(document.querySelector('#canvasChecker'), '::before').backgroundSize) / 2;
+      const center = size => Math.floor(size / 2 / halfTile) * halfTile + halfTile / 2;
+      return { x: Math.floor(rect.x + center(bg.w) * rect.width / bg.w),
+        y: Math.floor(rect.y + center(bg.h) * rect.height / bg.h) };
+    });
     const expectedPixel = PNG.sync.read(await page.screenshot({ clip: { x, y, width: 1, height: 1 } })).data;
     await page.mouse.click(x + 0.5, y + 0.5);
     await popup.waitFor({ state: 'visible' });
     const pickedColor = await hex.inputValue();
-    for (let i = 0; i < 3; i++) assert.ok(Math.abs(parseInt(pickedColor.slice(1 + i * 2, 3 + i * 2), 16) - expectedPixel[i]) <= 3, `transparent backdrop channel ${i}`);
+    for (let i = 0; i < 3; i++) assert.ok(Math.abs(parseInt(pickedColor.slice(1 + i * 2, 3 + i * 2), 16) - expectedPixel[i]) <= 3, `transparent backdrop channel ${i}: picked ${pickedColor}, displayed ${[...expectedPixel]}`);
     await popup.locator('[data-color-close]').click();
     assert.deepEqual(errors, []);
   } finally { await closeTestApp(session); }

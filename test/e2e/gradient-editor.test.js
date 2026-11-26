@@ -2,6 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { PNG } = require('pngjs');
+const pixelmatch = require('pixelmatch');
 const { launchTestApp, dismissStartupOverlays, closeTestApp } = require('../support/electron-app');
 async function openGradient(page, target = 'propTextFill') {
   await page.evaluate((target) => {
@@ -263,7 +265,8 @@ test('gradient styles do not change the text editor or style-code dialog', { tim
           const style = getComputedStyle(node);
           return { bounds: node.getBoundingClientRect().toJSON(), display: style.display,
             padding: style.padding, gap: style.gap, color: style.color, background: style.background,
-            font: style.font, border: style.border, overflow: style.overflow };
+            font: style.font, border: style.border, borderRadius: style.borderRadius,
+            boxShadow: style.boxShadow, outline: style.outline, opacity: style.opacity, overflow: style.overflow };
         }));
       }
       const original = await layout();
@@ -282,7 +285,15 @@ test('gradient styles do not change the text editor or style-code dialog', { tim
       });
       assert.ok(removed > 0);
       assert.deepEqual(await layout(), original);
-      assert.deepEqual(await dialog.screenshot(), before);
+      // Rounded-edge antialiasing can change when Chromium repaints a layer.
+      // Compare decoded pixels with standard perceptual tolerance, while the
+      // exact geometry and computed-style assertion above catches CSS changes.
+      const expected = PNG.sync.read(before);
+      const actual = PNG.sync.read(await dialog.screenshot());
+      assert.equal(actual.width, expected.width);
+      assert.equal(actual.height, expected.height);
+      assert.equal(pixelmatch(actual.data, expected.data, null, actual.width, actual.height,
+        { threshold: 0.1 }), 0, 'unrelated dialog must remain visually unchanged');
       await page.evaluate(() => {
         for (const rule of window.reviewGradientRules.reverse()) rule.sheet.insertRule(rule.text, rule.index);
         delete window.reviewGradientRules;
